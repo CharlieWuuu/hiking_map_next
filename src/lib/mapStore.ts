@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import type { InViewHike } from './api/adapters/hikes';
+import type { InViewHike } from './db/hikes';
 import { fetchHikesInView } from './db/hikes.query.actions';
 
 export type LngLat = [number, number];

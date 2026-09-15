@@ -73,8 +73,14 @@ export async function writeAuditLog(userId: number, action: 'login' | 'logout', 
   `;
 }
 
+export type AuthMethods = {
+  email: string | null;
+  hasPassword: boolean;
+  hasGoogle: boolean;
+};
+
 // 設定頁要顯示「這個帳號用哪些方式登入」
-export async function getAuthMethods(userId: number): Promise<{ hasPassword: boolean; hasGoogle: boolean; email: string | null }> {
+export async function getAuthMethods(userId: number): Promise<AuthMethods> {
   const rows = await sql`
     SELECT password IS NOT NULL AS "hasPassword", google_id IS NOT NULL AS "hasGoogle", email
     FROM users WHERE id = ${userId} LIMIT 1

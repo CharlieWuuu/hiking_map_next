@@ -35,7 +35,7 @@ export const useAuth = create<AuthState>((set, get) => ({
 
   login: async (username, password) => {
     const result = await loginAction(username, password);
-    // 密碼錯誤時丟出錯誤，維持原本 apiClient 失敗即 reject 的行為，登入表單的 catch 才顯示得到訊息
+    // 密碼錯誤時丟出錯誤，讓登入表單的 catch 顯示得到訊息
     if (!result.ok) throw new Error(result.error);
     await get().refresh();
   },

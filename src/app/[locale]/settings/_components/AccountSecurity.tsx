@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
-import type { AuthMethods } from '../../../../lib/api/adapters/auth';
+import type { AuthMethods } from '../../../../lib/db/auth';
 import { getAuthMethods, setEmail as saveEmailAction, unlinkGoogle as unlinkGoogleAction } from '../../../../lib/db/auth.actions';
 
 type Props = {

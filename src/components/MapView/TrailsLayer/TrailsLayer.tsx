@@ -9,7 +9,7 @@ import { Fragment, memo, useEffect, useMemo, useState } from 'react';
 import { CircleMarker, Polyline, Popup, useMap, useMapEvents } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 
-import type { Hike } from '../../../lib/api/adapters/hikes';
+import type { Hike } from '../../../lib/db/hikes';
 import { fetchHikeDetail } from '../../../lib/db/hikes.query.actions';
 import { CLUSTER_ZOOM, DETAIL_ZOOM, useMapStore, type LngLat } from '../../../lib/mapStore';
 import MapView from '../MapView';

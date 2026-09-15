@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import TrailEditCard, { type EditableTrail } from '../../../../components/TrailEditCard';
 import TrailListItem from '../../../../components/TrailListItem';
 import TrailTable from '../../../../components/TrailTable';
-import type { Mountain } from '../../../../lib/api';
+import type { Mountain } from '../../../../lib/db/mountains';
 import TrailDetailExpanded from './TrailDetailExpanded';
 
 type Trail = EditableTrail & { path: [number, number][]; bbox?: [number, number, number, number] | null; categoryNames?: string[] };

@@ -8,7 +8,7 @@ import { useState } from 'react';
 import TrailDetailCardBody from '../../../../../components/TrailDetailCardBody';
 import TrailEditCard, { type EditableTrail } from '../../../../../components/TrailEditCard';
 import { Link } from '../../../../../i18n/navigation';
-import type { Hike } from '../../../../../lib/api/adapters/hikes';
+import type { Hike } from '../../../../../lib/db/hikes';
 import { deleteHikeAction, updateHikeAction } from '../../../../../lib/db/hikes.actions';
 import { fetchMountains } from '../../../../../lib/db/hikes.query.actions';
 

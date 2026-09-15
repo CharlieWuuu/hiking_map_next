@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 
-import type { Hike, HikeStats } from '../../lib/api/adapters/hikes';
+import type { Hike, HikeStats } from '../../lib/db/hikes';
 import { fillMonthlyDistance, fillMonthlyDistanceFromFirstYear } from '../../lib/fillMonthlyDistance';
 import { getDistanceBucketCounts, getWeekdayCounts } from '../../lib/hikeStatsDerived';
 import ChartBar from '../ChartBar';

@@ -1,4 +1,4 @@
-import type { Hike } from './api/adapters/hikes';
+import type { Hike } from './db/hikes';
 
 // 週幾分布：週一到週日固定七格，即使某天次數為 0 也要出現
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
