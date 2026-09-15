@@ -1,0 +1,59 @@
+@import 'tailwindcss';
+@import '../styles/palette.css';
+@import '../styles/tokens.css';
+
+@custom-variant dark (&:where(:not(.light, .light *)));
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-background-contrary);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+/* For debugging */
+/* * {
+  box-shadow: inset 0 0 0 1px var(--color-background-contrary);
+} */
+
+/* 頁面預設限制閱讀寬度；內容裡有 .page-wide（例如地圖＋清單）時，改為撐滿版面寬度 */
+.page-content-width {
+  max-width: 60rem;
+}
+.page-content-width:has(.page-wide) {
+  max-width: none;
+}
+
+/* 地圖上選中路線的懸浮卡：拔掉 Leaflet 預設泡泡的白底／陰影／箭頭，改用內層自己的 bg-panel 卡片樣式 */
+.hiking-map-popup .leaflet-popup-content-wrapper {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+}
+.hiking-map-popup .leaflet-popup-content {
+  margin: 0;
+  color: inherit;
+}
+.hiking-map-popup .leaflet-popup-tip-container {
+  display: none;
+}
+
+/* 細窄、跟卡片同色系的捲軸，取代瀏覽器預設樣式。平常捲軸透明不佔視覺份量，滑鼠移進容器才顯示。
+   純用標準 scrollbar-color/-width，不疊加 ::-webkit-scrollbar 系列——兩者同時設定在 Chromium 上
+   會互相干擾導致 hover 沒有效果，只留 scrollbar-color 這一套，跟 :hover 才會確實生效 */
+.scrollbar-subtle {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.scrollbar-subtle:hover {
+  scrollbar-color: color-mix(in srgb, var(--color-panel-active) 50%, transparent) transparent;
+}

@@ -1,0 +1,308 @@
+{
+  "Metadata": {
+    "title": "Hiking Track",
+    "description": "Upload your GPX and build your hiking track together."
+  },
+  "Common": {
+    "noData": "No data"
+  },
+  "HikeStatsCharts": {
+    "monthlyDistance": "Monthly distance",
+    "monthLabel": "Month {month}",
+    "peakMonth": "Peak {month}: {distance, number, ::.##} km",
+    "countyStats": "County stats",
+    "topCounty": "Top: {county} ({count})",
+    "distanceTrend": "Distance trend",
+    "weekdayStats": "Day of week",
+    "peakWeekday": "Most on {weekday} ({count})",
+    "distanceBucket": "Distance range",
+    "monthlyHeatmap": "Monthly heatmap",
+    "unitKm": "km",
+    "unitMonth": "",
+    "unitCount": "times",
+    "weekday": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
+    "distanceBucketLabel": {
+      "under3": "0-3",
+      "3to5": "3-5",
+      "5to8": "5-8",
+      "8to12": "8-12",
+      "12to20": "12-20",
+      "over20": "20+"
+    }
+  },
+  "Nav": {
+    "home": "Home",
+    "search": "Explore",
+    "data": "Data",
+    "upload": "Add Record",
+    "profile": "Stats",
+    "settings": "Settings"
+  },
+  "SearchBar": {
+    "placeholder": "Search users or trails",
+    "searchLabel": "Search"
+  },
+  "SearchResult": {
+    "trail": "Trail",
+    "hike": "My record",
+    "matchField": "・matched content"
+  },
+  "HomePage": {
+    "greeting": "{username}",
+    "latestHike": "Recent hikes",
+    "viewAllHikes": "View all hikes",
+    "recommendedTrails": "Recommended trails",
+    "exploreMoreTrails": "Explore more trails",
+    "yourStats": "Your Stats",
+    "goToProfile": "View full stats",
+    "totalDistanceValue": "{distance, number, ::.##} km",
+    "hikeCountValue": "{count} hikes",
+    "loginPrompt": "Sign in to see your hiking stats",
+    "loginCta": "Go to sign in"
+  },
+  "LoginPage": {
+    "title": "Log in",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Log in",
+    "error": "Incorrect username or password",
+    "orDivider": "or",
+    "oauth": {
+      "google": "Continue with Google"
+    },
+    "forgotPassword": "Forgot password?"
+  },
+  "ForgotPasswordPage": {
+    "title": "Forgot password",
+    "description": "Enter the email on your account and we will send you a reset link.",
+    "email": "Email",
+    "submit": "Send reset link",
+    "sentTitle": "Check your inbox",
+    "sentDescription": "If that email matches an account, a reset link is on its way. It expires in an hour. Check your spam folder too.",
+    "backToLogin": "Back to login"
+  },
+  "ResetPasswordPage": {
+    "title": "Set a new password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "submit": "Update password",
+    "mismatch": "The two passwords do not match",
+    "expired": "This link is no longer valid. Please request a new one.",
+    "invalidTitle": "Incomplete link",
+    "requestAgain": "Request a new link"
+  },
+  "NotFoundPage": {
+    "title": "Page not found",
+    "description": "The URL may be wrong, or this data doesn't exist",
+    "backHome": "Back to home"
+  },
+  "SearchPage": {
+    "noResults": "No results for \"{query}\"",
+    "hundred": "Hundred Peaks",
+    "smallHundred": "Small Hundred Peaks",
+    "hundredTrail": "Top 100 Trails",
+    "categoryFilter": "Category",
+    "noTrails": "No trails match the current filters",
+    "nearbyTitle": "Nearby Trails",
+    "nearbyLoadFailed": "Couldn't load nearby trails, please try again",
+    "nearbyRetry": "Retry",
+    "nearbyEmpty": "No nearby trails found"
+  },
+  "ProfilePage": {
+    "title": "Stats",
+    "totalDistanceLabel": "Overview",
+    "totalDistance": "{distance, number, ::.0} km",
+    "hikeCount": "{count} hikes",
+    "achievementHundred": "Hundred Peaks",
+    "achievementSmallHundred": "Small Hundred Peaks",
+    "achievementHundredTrail": "Top 100 Trails"
+  },
+  "MountainProgress": {
+    "title": "Progress",
+    "hundred": "Hundred Peaks",
+    "smallHundred": "Small Hundred Peaks",
+    "progressCount": "{completed} / {total}",
+    "missing": "Missing",
+    "completed": "Completed"
+  },
+  "EditProfileForm": {
+    "title": "Profile",
+    "avatar": "Avatar URL",
+    "description": "Bio",
+    "save": "Save",
+    "saved": "Saved",
+    "saveFailed": "Save failed"
+  },
+  "ProfileDataPage": {
+    "title": "Map & Data",
+    "subtitle": "{count} records",
+    "subtitleWithCategory": "{category} · {count} records",
+    "badgePrivate": "Private",
+    "backToProfile": "Back to stats",
+    "noTrails": "No records yet",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "export": "Export",
+    "viewCard": "Card view",
+    "viewTable": "Table view",
+    "goToEdit": "Edit trails",
+    "exitEdit": "Exit editing",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "pageIndicator": "Page {page} of {pageCount}",
+    "linkLabel": "Link {index}",
+    "viewDetail": "View full page",
+    "distanceUnit": "km"
+  },
+  "TrailEditCard": {
+    "save": "Save",
+    "saveFailed": "Save failed, please try again",
+    "close": "Close",
+    "delete": "Delete record",
+    "confirmDelete": "Are you sure you want to delete this hike record? This cannot be undone.",
+    "name": "Name",
+    "county": "County",
+    "town": "Town",
+    "date": "Date",
+    "distance": "Distance",
+    "distanceValue": "{distance, number, ::.##} km",
+    "public": "Public",
+    "yes": "Yes",
+    "no": "No",
+    "mountains": "Peaks completed",
+    "mountainsSearchPlaceholder": "Search a peak to add",
+    "links": "Route links",
+    "linksPlaceholder": "https://",
+    "addLink": "Add link",
+    "removeLink": "Remove link",
+    "note": "Note"
+  },
+  "TrailTable": {
+    "name": "Name",
+    "county": "County",
+    "town": "Town",
+    "date": "Date"
+  },
+  "ProfileCollectionsPage": {
+    "title": "Collections",
+    "empty": "No trails collected yet",
+    "backToProfile": "Back to stats"
+  },
+  "HikeDetailPage": {
+    "backToProfile": "Back to map & data",
+    "edit": "Edit",
+    "date": "Date",
+    "distance": "Distance",
+    "distanceValue": "{distance, number, ::.##} km",
+    "distanceUnit": "km",
+    "links": "Route links",
+    "linkLabel": "Link {index}",
+    "note": "Note",
+    "noValue": "-",
+    "map": "Map",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "TrailListItem": {
+    "date": "Date",
+    "distance": "Distance",
+    "distanceValue": "{distance, number, ::.##} km"
+  },
+  "TrailDetailPage": {
+    "back": "Back to search",
+    "date": "Date",
+    "distance": "Distance",
+    "distanceValue": "{distance, number, ::.##} km",
+    "distanceUnit": "km",
+    "links": "Route links",
+    "linkLabel": "Link {index}",
+    "note": "Note",
+    "noValue": "-",
+    "intro": "Introduction",
+    "map": "Map"
+  },
+  "SettingsPage": {
+    "title": "Settings",
+    "goToIntro": "Go to about this site",
+    "language": "Language",
+    "darkMode": "Dark mode",
+    "logout": "Log out",
+    "login": "Log in"
+  },
+  "AccountSecurity": {
+    "title": "Account security",
+    "email": "Email",
+    "emailHint": "Password reset links are sent here.",
+    "emailMissingHint": "Not set. Without an email you cannot reset your own password.",
+    "saveEmail": "Save",
+    "saved": "Saved",
+    "saveFailed": "Could not save. That email may already be used by another account.",
+    "google": "Google account",
+    "googleHint": "Once linked, you can sign in with Google if you forget your password.",
+    "googleLinked": "Linked",
+    "googleLink": "Link",
+    "googleUnlink": "Unlink",
+    "googleUnlinkBlocked": "This account has no password. Unlinking would lock you out.",
+    "googleConflict": "That Google account is already linked to another account."
+  },
+  "SettingsIntroPage": {
+    "title": "About this site",
+    "backToSettings": "Back to settings",
+    "purposeTitle": "Purpose",
+    "purposeIntro": "This site visualizes hiking records, serving both as a personal achievement log and a platform for sharing with others. Its main features:",
+    "purposeItem1": "Add, browse, edit, and delete hiking trails (requires login)",
+    "purposeItem2": "User login system to protect data ownership",
+    "purposeItem3": "Achievement dashboard showing personal activity totals",
+    "purposeItem4": "Search other users' records",
+    "purposeItem5": "Mobile-friendly and installable as a PWA",
+    "purposeNote": "The design was initially inspired by Spotify's single-page feel. It was later split into a multi-page structure for clearer navigation, alongside a simulated multi-user flow.",
+    "techTitle": "Tech Stack",
+    "techIntro": "This project is built with:",
+    "techFrontend": "Frontend: Next.js",
+    "techBackend": "Backend & database: NestJS + PostgreSQL (hosted on Neon)",
+    "techDesign": "Interface design: Figma",
+    "techVisual": "Visual design: icons, logo, and hero banner all custom-drawn",
+    "techNote": "The logo is inspired by the hiking phrase \"one more bend and you're at the summit,\" symbolizing steady progress toward a goal. The overall color scheme and interaction flow draw inspiration from Spotify, YouTube, and Hevy.",
+    "problemTitle": "The Problem",
+    "problemIntro": "I've long kept a habit of recording my hiking trails, but existing tools make producing, organizing, and presenting this data inconvenient:",
+    "problemMethodsIntro": "Common ways to record a trail:",
+    "problemMethod1": "Draw a line on Openrouteservice Maps and export as GPX",
+    "problemMethod2": "Record a GPS track while hiking and export as GPX",
+    "problemMethod3": "Draw the trail manually with GIS software like QGIS or ArcGIS",
+    "problemPainIntro": "But presenting this data brought its own problems:",
+    "problemPain1": "QGIS-exported static images aren't interactive — others can't pan or zoom them",
+    "problemPain2": "Google Maps works for display but has limited layers, forcing all trails into one file and full rewrites on every update",
+    "problemPain3": "Lacks flexibility and extensibility for further chart analysis or multi-user sharing",
+    "problemConclusion": "So I extended this need into a full web app, simulating an open platform that supports multi-user uploads, interactive queries, and achievement visualization."
+  },
+  "HikeUploadPage": {
+    "title": "Upload a hike",
+    "subtitle": "Pick a GPX file, review it, then save",
+    "choosePrompt": "Choose a GPX file",
+    "chooseHint": "Supports .gpx exported from hiking apps",
+    "parseFailed": "Could not read the file",
+    "submitFailed": "Saving failed, please try again",
+    "distance": "Distance",
+    "distanceValue": "{distance, number, ::.##} km",
+    "elevationGain": "Elevation gain",
+    "elevationGainValue": "{meters, number} m",
+    "segments": "Segments",
+    "points": "Points",
+    "name": "Name",
+    "date": "Date",
+    "note": "Note",
+    "mountains": "Peaks completed",
+    "mountainsSearchPlaceholder": "Search a peak to add",
+    "isPublic": "Make this hike public",
+    "submit": "Save hike",
+    "submitting": "Saving…"
+  }
+}

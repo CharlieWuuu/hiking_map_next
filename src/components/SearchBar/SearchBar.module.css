@@ -1,0 +1,11 @@
+/*
+  巢狀圓角公式：外層圓角 = 內層圓角 + 內層與外層之間的間距（padding）
+  只要改 --item-radius 或 --item-padding，外層圓角會自動連動，不用手動重算。
+*/
+.resultsPanel {
+  --item-radius: var(--radius-panel);
+  --item-padding: 0.75rem;
+
+  padding: var(--item-padding);
+  border-radius: calc(var(--item-radius) + var(--item-padding));
+}

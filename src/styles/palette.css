@@ -1,0 +1,12 @@
+@theme {
+  --color-raw-dark: #1e1e1e;
+  --color-raw-black: #0a0a0a;
+  --color-raw-light: #f0f0f0;
+  --color-raw-gray-500: #464646;
+  --color-raw-gray-400: #909090;
+  --color-raw-gray-200: #d9d9d9;
+  --color-raw-gray-100: #ffffff;
+  --color-raw-cyan: #90c8d0;
+  --color-raw-yellow: #ffff3c;
+  --color-raw-yellow-brown: #a67c00;
+}

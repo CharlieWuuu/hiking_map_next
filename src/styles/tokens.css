@@ -1,0 +1,57 @@
+@theme {
+  --color-background: var(--theme-background);
+  --color-background-contrary: var(--theme-background-contrary);
+  --color-panel: var(--theme-panel);
+  --color-panel-active: var(--theme-panel-active);
+  --color-panel-active-lighten: var(--theme-panel-active-lighten);
+  --color-nav: var(--theme-nav);
+  --color-nav-border: var(--theme-nav-border);
+  --color-accent: var(--theme-accent);
+  --color-accent-lighten: var(--theme-accent-lighten);
+  --color-accent-darken: var(--theme-accent-darken);
+  --color-accent-contrast: var(--theme-accent-contrast);
+  --color-highlight: var(--theme-highlight);
+  --color-highlight-contrast: var(--theme-highlight-contrast);
+
+  --radius-panel: 0.75rem;
+}
+
+:root {
+  --nav-width: 14rem;
+  --theme-background: var(--color-raw-dark);
+  --theme-background-contrary: var(--color-raw-light);
+  --theme-panel: var(--color-raw-gray-500);
+  --theme-panel-active: var(--color-raw-gray-400);
+  --theme-panel-active-lighten: color-mix(in srgb, var(--color-raw-gray-400) 90%, white 10%);
+  /* 導覽列只比底色深/淺一階，不用 panel 那麼重的對比。
+     由主題色衍生，所以深淺兩版自動一致，不需要各自寫死色值 */
+  --theme-nav: color-mix(in srgb, var(--theme-background) 88%, var(--theme-background-contrary) 12%);
+  --theme-nav-border: transparent;
+  --theme-accent: var(--color-raw-yellow);
+  --theme-accent-lighten: color-mix(in srgb, var(--color-raw-yellow) 80%, white 20%);
+  --theme-accent-darken: color-mix(in srgb, var(--color-raw-yellow) 65%, black 35%);
+  --theme-accent-contrast: var(--color-raw-dark);
+  --logo-color: var(--theme-accent);
+  --logo-text-fill: var(--theme-accent);
+  /* 高對比重點卡：不隨主題切換，維持純黑底白字，用來在版面中拉出對比層次 */
+  --theme-highlight: var(--color-raw-black);
+  --theme-highlight-contrast: var(--color-raw-gray-100);
+}
+
+.light {
+  --theme-background: var(--color-raw-gray-100);
+  --theme-background-contrary: var(--color-raw-dark);
+  --theme-panel: var(--color-raw-light);
+  --theme-panel-active: var(--color-raw-gray-200);
+  --theme-panel-active-lighten: color-mix(in srgb, var(--color-raw-gray-200) 90%, white 10%);
+  --theme-nav-border: var(--color-raw-gray-200);
+  /* 純黃在淺色模式對比度僅 3.82，未達 AA；改用深黃棕維持可讀性 */
+  --theme-accent: var(--color-raw-yellow-brown);
+  --theme-accent-lighten: color-mix(in srgb, var(--color-raw-yellow-brown) 80%, white 20%);
+  --theme-accent-darken: color-mix(in srgb, var(--color-raw-yellow-brown) 65%, black 35%);
+  --theme-accent-contrast: var(--color-raw-gray-100);
+}
+
+.nav-collapsed {
+  --nav-width: 4rem;
+}

@@ -1,0 +1,308 @@
+{
+  "Metadata": {
+    "title": "健行軌跡",
+    "description": "上傳你的 GPX，一起建立你的健行軌跡。"
+  },
+  "Common": {
+    "noData": "無資料"
+  },
+  "HikeStatsCharts": {
+    "monthlyDistance": "每月里程",
+    "monthLabel": "{month}月",
+    "peakMonth": "{month}月｜最高 {distance, number, ::.##} 公里",
+    "countyStats": "縣市統計",
+    "topCounty": "{county}｜最多 {count} 次",
+    "distanceTrend": "距離趨勢",
+    "weekdayStats": "星期分布",
+    "peakWeekday": "{weekday}｜最多 {count} 次",
+    "distanceBucket": "距離區間",
+    "monthlyHeatmap": "月度熱度",
+    "unitKm": "公里",
+    "unitMonth": "月",
+    "unitCount": "次",
+    "weekday": {
+      "mon": "一",
+      "tue": "二",
+      "wed": "三",
+      "thu": "四",
+      "fri": "五",
+      "sat": "六",
+      "sun": "日"
+    },
+    "distanceBucketLabel": {
+      "under3": "0-3",
+      "3to5": "3-5",
+      "5to8": "5-8",
+      "8to12": "8-12",
+      "12to20": "12-20",
+      "over20": "20+"
+    }
+  },
+  "Nav": {
+    "home": "首頁",
+    "search": "探索",
+    "data": "資料",
+    "upload": "新增",
+    "profile": "統計",
+    "settings": "設定"
+  },
+  "SearchBar": {
+    "placeholder": "搜尋使用者或路線",
+    "searchLabel": "搜尋"
+  },
+  "SearchResult": {
+    "trail": "路線",
+    "hike": "我的紀錄",
+    "matchField": "・符合內容"
+  },
+  "HomePage": {
+    "greeting": "{username}",
+    "latestHike": "近期紀錄",
+    "viewAllHikes": "查看完整資料",
+    "recommendedTrails": "推薦路線",
+    "exploreMoreTrails": "探索更多路線",
+    "yourStats": "我的統計",
+    "goToProfile": "查看完整統計",
+    "totalDistanceValue": "{distance, number, ::.##} 公里",
+    "hikeCountValue": "{count} 次健行",
+    "loginPrompt": "登入後即可看到自己的健行統計",
+    "loginCta": "前往登入"
+  },
+  "LoginPage": {
+    "title": "登入",
+    "username": "使用者名稱",
+    "password": "密碼",
+    "submit": "登入",
+    "error": "帳號或密碼錯誤",
+    "orDivider": "或",
+    "oauth": {
+      "google": "使用 Google 登入"
+    },
+    "forgotPassword": "忘記密碼？"
+  },
+  "ForgotPasswordPage": {
+    "title": "忘記密碼",
+    "description": "輸入你設定過的 email，我們會寄一條重設連結給你。",
+    "email": "Email",
+    "submit": "寄出重設連結",
+    "sentTitle": "信寄出去了",
+    "sentDescription": "如果這個 email 有對應的帳號，重設連結已經寄出，一小時內有效。記得看看垃圾郵件匣。",
+    "backToLogin": "回到登入"
+  },
+  "ResetPasswordPage": {
+    "title": "設定新密碼",
+    "newPassword": "新密碼",
+    "confirmPassword": "再輸入一次",
+    "submit": "更新密碼",
+    "mismatch": "兩次輸入的密碼不一樣",
+    "expired": "這條連結已經失效，請重新申請",
+    "invalidTitle": "連結不完整",
+    "requestAgain": "重新申請"
+  },
+  "NotFoundPage": {
+    "title": "找不到這個頁面",
+    "description": "可能是網址打錯，或這筆資料不存在",
+    "backHome": "回首頁"
+  },
+  "SearchPage": {
+    "noResults": "查無「{query}」的相關結果",
+    "hundred": "百岳",
+    "smallHundred": "小百岳",
+    "hundredTrail": "百大必訪步道",
+    "categoryFilter": "分類",
+    "noTrails": "查無符合條件的步道",
+    "nearbyTitle": "附近路線推薦",
+    "nearbyLoadFailed": "無法取得附近路線，請稍後再試",
+    "nearbyRetry": "重試",
+    "nearbyEmpty": "附近沒有找到路線"
+  },
+  "ProfilePage": {
+    "title": "統計",
+    "totalDistanceLabel": "總覽",
+    "totalDistance": "{distance, number, ::.0} 公里",
+    "hikeCount": "{count} 次健行",
+    "achievementHundred": "百岳",
+    "achievementSmallHundred": "小百岳",
+    "achievementHundredTrail": "百大必訪步道"
+  },
+  "MountainProgress": {
+    "title": "完成度",
+    "hundred": "百岳",
+    "smallHundred": "小百岳",
+    "progressCount": "{completed} / {total}",
+    "missing": "還缺",
+    "completed": "已完成"
+  },
+  "EditProfileForm": {
+    "title": "個人檔案",
+    "avatar": "大頭貼網址",
+    "description": "簡介",
+    "save": "儲存",
+    "saved": "已儲存",
+    "saveFailed": "儲存失敗"
+  },
+  "ProfileDataPage": {
+    "title": "資料",
+    "subtitle": "共 {count} 筆",
+    "subtitleWithCategory": "{category}・共 {count} 筆",
+    "badgePrivate": "不公開",
+    "backToProfile": "返回統計",
+    "noTrails": "還沒有任何紀錄",
+    "expand": "展開",
+    "collapse": "收合",
+    "export": "匯出",
+    "viewCard": "卡片檢視",
+    "viewTable": "表格檢視",
+    "goToEdit": "編輯",
+    "exitEdit": "結束",
+    "previousPage": "上一頁",
+    "nextPage": "下一頁",
+    "pageIndicator": "第 {page} / {pageCount} 頁",
+    "linkLabel": "連結 {index}",
+    "viewDetail": "查看單獨頁面",
+    "distanceUnit": "公里"
+  },
+  "TrailEditCard": {
+    "save": "儲存",
+    "saveFailed": "儲存失敗，請稍後再試",
+    "close": "關閉",
+    "delete": "刪除紀錄",
+    "confirmDelete": "確定要刪除這筆健行紀錄嗎？此操作無法復原。",
+    "name": "名稱",
+    "county": "縣市",
+    "town": "鄉鎮",
+    "date": "日期",
+    "distance": "距離",
+    "distanceValue": "{distance, number, ::.##} 公里",
+    "public": "公開",
+    "yes": "是",
+    "no": "否",
+    "mountains": "登頂紀錄",
+    "mountainsSearchPlaceholder": "搜尋山名加入",
+    "links": "路線連結",
+    "linksPlaceholder": "https://",
+    "addLink": "新增連結",
+    "removeLink": "刪除連結",
+    "note": "說明"
+  },
+  "TrailTable": {
+    "name": "名稱",
+    "county": "縣市",
+    "town": "鄉鎮",
+    "date": "時間"
+  },
+  "ProfileCollectionsPage": {
+    "title": "收藏清單",
+    "empty": "還沒有收藏任何路線",
+    "backToProfile": "返回統計"
+  },
+  "HikeDetailPage": {
+    "backToProfile": "返回地圖與資料",
+    "edit": "編輯",
+    "date": "日期",
+    "distance": "距離",
+    "distanceValue": "{distance, number, ::.##} 公里",
+    "distanceUnit": "公里",
+    "links": "路線連結",
+    "linkLabel": "連結 {index}",
+    "note": "說明",
+    "noValue": "-",
+    "map": "地圖",
+    "yes": "是",
+    "no": "否"
+  },
+  "TrailListItem": {
+    "date": "日期",
+    "distance": "距離",
+    "distanceValue": "{distance, number, ::.##} 公里"
+  },
+  "TrailDetailPage": {
+    "back": "返回搜尋",
+    "date": "日期",
+    "distance": "距離",
+    "distanceValue": "{distance, number, ::.##} 公里",
+    "distanceUnit": "公里",
+    "links": "路線連結",
+    "linkLabel": "連結 {index}",
+    "note": "說明",
+    "noValue": "-",
+    "intro": "介紹",
+    "map": "地圖"
+  },
+  "SettingsPage": {
+    "title": "設定",
+    "goToIntro": "前往關於本站",
+    "language": "語言",
+    "darkMode": "深色模式",
+    "logout": "登出",
+    "login": "登入"
+  },
+  "AccountSecurity": {
+    "title": "帳號安全",
+    "email": "Email",
+    "emailHint": "忘記密碼時，重設連結會寄到這裡。",
+    "emailMissingHint": "還沒設定。沒有 email 就沒辦法自己重設密碼。",
+    "saveEmail": "儲存",
+    "saved": "已儲存",
+    "saveFailed": "儲存失敗，這個 email 可能已經被其他帳號使用",
+    "google": "Google 帳號",
+    "googleHint": "綁定後，忘記密碼也能用 Google 登入進來。",
+    "googleLinked": "已綁定",
+    "googleLink": "綁定",
+    "googleUnlink": "解除綁定",
+    "googleUnlinkBlocked": "這個帳號沒有密碼，解除綁定後將無法登入",
+    "googleConflict": "這個 Google 帳號已經綁在其他帳號上"
+  },
+  "SettingsIntroPage": {
+    "title": "網站介紹",
+    "backToSettings": "返回設定",
+    "purposeTitle": "網站目的",
+    "purposeIntro": "本網站用於視覺化呈現登山記錄，可作為個人成就的紀錄工具，也能作為與他人交流的平臺。具體功能如下：",
+    "purposeItem1": "登山路線的新增、瀏覽、編輯與刪除（需登入）",
+    "purposeItem2": "使用者登入系統，保障資料管理權限",
+    "purposeItem3": "成就統計頁面，展示個人活動累積與總覽",
+    "purposeItem4": "搜尋其他使用者資料",
+    "purposeItem5": "支援手機瀏覽與 PWA 安裝使用",
+    "purposeNote": "最初設計時參考 Spotify 的風格，希望使用者感覺一切都在同一個頁面中完成。後來為了讓功能與導覽更清楚，改為多頁式結構，並加入模擬多用戶使用的流程設計。",
+    "techTitle": "開發技術",
+    "techIntro": "本專案使用以下技術實作：",
+    "techFrontend": "前端框架：Next.js",
+    "techBackend": "後端與資料庫：NestJS + PostgreSQL（Neon 雲端託管）",
+    "techDesign": "介面設計：Figma",
+    "techVisual": "視覺設計：Icon、Logo 與 Hero Banner 皆為自繪設計",
+    "techNote": "Logo 發想自登山時常說的激勵語「再一個彎就到山頂了」，象徵離目標不遠、持續前行的精神。整體配色與操作流程靈感來自 Spotify、YouTube 與 Hevy 等應用服務。",
+    "problemTitle": "解決的問題",
+    "problemIntro": "我本身有記錄登山路線的習慣，但現有工具在「資料產製、彙整、展示」上都有些不便：",
+    "problemMethodsIntro": "常見的路線記錄方式如下：",
+    "problemMethod1": "使用 Openrouteservice Maps 畫線並匯出 GPX",
+    "problemMethod2": "實地登山時以 GPS 紀錄軌跡後匯出 GPX",
+    "problemMethod3": "使用 QGIS、ArcGIS 等 GIS 軟體自行繪製路線",
+    "problemPainIntro": "然而展示這些資料時，我常遇到幾個問題：",
+    "problemPain1": "QGIS 匯出靜態圖片不易互動，無法讓他人自行縮放與查詢",
+    "problemPain2": "Google Maps 雖可用於展示，但圖層數量有限，需合併所有路線為一檔，更新時也需整體覆寫",
+    "problemPain3": "缺乏彈性與擴充性，難以進一步做圖表分析或多使用者共享",
+    "problemConclusion": "因此，我將此需求延伸發展為一個網站應用，並模擬成開放平臺架構，支援多用戶資料上傳、互動查詢、成就視覺化等功能。"
+  },
+  "HikeUploadPage": {
+    "title": "上傳紀錄",
+    "subtitle": "選擇 GPX 檔案，確認內容後儲存",
+    "choosePrompt": "選擇 GPX 檔案",
+    "chooseHint": "支援登山 App 匯出的 .gpx",
+    "parseFailed": "檔案讀取失敗",
+    "submitFailed": "儲存失敗，請稍後再試",
+    "distance": "距離",
+    "distanceValue": "{distance, number, ::.##} 公里",
+    "elevationGain": "總爬升",
+    "elevationGainValue": "{meters, number} 公尺",
+    "segments": "軌跡段數",
+    "points": "軌跡點數",
+    "name": "名稱",
+    "date": "日期",
+    "note": "備註",
+    "mountains": "登頂紀錄",
+    "mountainsSearchPlaceholder": "搜尋山名加入",
+    "isPublic": "公開這筆紀錄",
+    "submit": "儲存紀錄",
+    "submitting": "儲存中…"
+  }
+}
