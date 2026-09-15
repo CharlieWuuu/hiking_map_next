@@ -78,6 +78,9 @@ export default function LoginPage() {
       </div>
 
       <div className="flex w-full max-w-xs flex-col gap-3">
+        {/* 導去 Route Handler 開始 OAuth，不是站內頁面跳轉：
+            Link 會預抓並嘗試 soft navigation，這裡需要瀏覽器整頁離開 */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a href="/api/auth/google" className="bg-panel hover:bg-panel-active rounded-panel flex items-center justify-center gap-2 px-4 py-2 transition-colors">
           {t('oauth.google')}
         </a>

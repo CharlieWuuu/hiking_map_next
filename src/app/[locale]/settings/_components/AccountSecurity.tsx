@@ -112,6 +112,9 @@ export default function AccountSecurity({ initialMethods }: Props) {
               {t('googleUnlink')}
             </button>
           ) : (
+            // 導去 Route Handler 開始 OAuth，不是站內頁面跳轉：
+            // Link 會預抓並嘗試 soft navigation，這裡需要瀏覽器整頁離開
+            // eslint-disable-next-line @next/next/no-html-link-for-pages
             <a
               href="/api/auth/google?mode=link"
               className="bg-panel-active hover:bg-panel-active-lighten rounded-panel shrink-0 px-3 py-1.5 text-sm transition-colors"
