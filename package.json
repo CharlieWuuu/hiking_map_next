@@ -10,7 +10,7 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "generate:api": "swagger-typescript-api generate --path http://localhost:3001/api-docs-json --output ./src/lib/api/generated --name index.ts --axios --modular --unwrap-response-data --route-types",
-    "prepare": "git rev-parse --is-inside-work-tree > /dev/null 2>&1 && git config core.hooksPath hiking_map_frontend_next/.husky || true"
+    "prepare": "git rev-parse --is-inside-work-tree > /dev/null 2>&1 && git config core.hooksPath .husky || true"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1131.0",

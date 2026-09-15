@@ -1,25 +1,37 @@
-# 健行軌跡 · 前端
+# 健行軌跡
 
 用 Next.js 寫的健行紀錄工具。上傳 GPX、把軌跡畫在地圖上、用圖表看累積成果。
 
-這是第二版前端。第一版是 Vite + Sass（在 `hiking_map_frontend/`，已停用），改寫的動機是想要 SSR、以及一套能撐得住的元件與樣式規範。
+資料存取在 Next.js 的 server 端直接進行，沒有另外一台 API server。Server Component 本來就跑在伺服器上，為了執行 SQL 而多打一次 HTTP 是純粹的開銷。
+
+舊版（NestJS 後端 + Vite 前端）留在 [hiking_map](https://github.com/CharlieWuuu/hiking_map)，兩邊的資料庫與儲存空間完全獨立，互不影響。
 
 ## 開發
 
 ```bash
-pnpm install
-pnpm dev          # http://localhost:4219
+npm install
+npm run dev       # http://localhost:4219
 ```
 
-後端要另外起（見專案根目錄的 README），預設連 `http://localhost:3001`，可用 `.env.local` 的 `NEXT_PUBLIC_API_BASE_URL` 覆寫。
+需要 `.env.local`，至少要有：
+
+```bash
+DATABASE_URL=            # Neon（PostGIS）
+JWT_SECRET=              # 缺了會啟動失敗，這是刻意的
+R2_ACCOUNT_ID=           # Cloudflare R2：圖片與完整軌跡
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET=
+R2_ENDPOINT=
+R2_PUBLIC_URL=
+```
 
 其他指令：
 
 ```bash
-pnpm build        # production build
-pnpm lint
-pnpm storybook    # http://localhost:6006
-pnpm generate:api # 從後端 Swagger 重新生成 API client
+npm run build
+npm run lint
+npm run storybook # http://localhost:6006
 ```
 
 ## 目錄
@@ -30,17 +42,25 @@ src/
 ├── components/       跨頁面共用元件，一個資料夾一個元件
 ├── features/         特定領域的元件組合
 ├── lib/
-│   ├── api/
-│   │   ├── generated/  Swagger 自動生成，不要手改
-│   │   └── adapters/   snake_case ↔ camelCase 與型別轉換
-│   └── apiClient.ts    對外只從這裡取用 API
+│   ├── db/           直接查資料庫，只能被 server 端 import
+│   │   ├── index.ts    neon() 連線，tagged template 自動參數化
+│   │   └── *.actions.ts Server Action
+│   └── api/          舊的 NestJS client，尚未完全移除
 ├── styles/           palette.css（原始色票）+ tokens.css（語意化 token）
 └── testing/mocks/    Storybook 與測試用假資料
 ```
 
 ## 幾個約定
 
-**API 不要手寫。** 後端改完端點就跑 `pnpm generate:api`，`lib/api/generated/` 整包重生。頁面一律從 `lib/apiClient` 取用，中間隔著 `adapters/` 這層——後端回傳 snake_case，前端用 camelCase，轉換只發生在那裡。
+**資料存取只在 server 端。** `lib/db/` 的檔案都帶 `import 'server-only'`，從 client component import 會在編譯期直接報錯，而不是把連線字串打包進瀏覽器。寫入走 Server Action。
+
+SQL 用 tagged template，帶入的變數會自動變成參數化查詢，不會有 injection：
+
+```ts
+const rows = await sql`SELECT * FROM trails WHERE slug = ${slug}`;
+```
+
+`lib/api/`（舊的 NestJS client）還有少數地方在用，尚未移除完。
 
 **顏色不要寫死。** `palette.css` 放原始色票，`tokens.css` 把它們映射成語意化的名字（`--color-panel`、`--color-accent`…），元件只用後者。深淺主題靠 `.light` 覆寫同一組 token，所以換主題不需要改任何元件。品牌色目前是單一值，深淺共用。
 
