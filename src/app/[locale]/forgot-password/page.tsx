@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { Link } from '../../../i18n/navigation';
-import { apiClient } from '../../../lib/apiClient';
+import { requestPasswordReset } from '../../../lib/db/password-reset.actions';
 
 export default function ForgotPasswordPage() {
   const t = useTranslations('ForgotPasswordPage');
@@ -15,9 +15,9 @@ export default function ForgotPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsSubmitting(true);
-    // 後端一律回傳成功，所以這裡也不分「有沒有這個 email」——
+    // 伺服器一律回傳成功，所以這裡也不分「有沒有這個 email」——
     // 否則這個畫面會變成查詢帳號是否存在的工具
-    await apiClient.auth.forgotPassword(email).catch(() => {});
+    await requestPasswordReset(email).catch(() => {});
     setIsSent(true);
     setIsSubmitting(false);
   }

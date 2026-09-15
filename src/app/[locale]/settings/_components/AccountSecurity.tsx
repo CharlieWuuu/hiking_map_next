@@ -5,8 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 import type { AuthMethods } from '../../../../lib/api/adapters/auth';
-import { apiClient } from '../../../../lib/apiClient';
-import { getAuthMethods } from '../../../../lib/db/auth.actions';
+import { getAuthMethods, setEmail as saveEmailAction, unlinkGoogle as unlinkGoogleAction } from '../../../../lib/db/auth.actions';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 
@@ -36,7 +35,11 @@ export default function AccountSecurity({ initialMethods }: Props) {
     e.preventDefault();
     setStatus('saving');
     try {
-      await apiClient.auth.setEmail(email);
+      const result = await saveEmailAction(email);
+      if (!result.ok) {
+        setStatus('error');
+        return;
+      }
       await reload();
       setStatus('saved');
     } catch {
@@ -46,7 +49,11 @@ export default function AccountSecurity({ initialMethods }: Props) {
 
   async function unlinkGoogle() {
     try {
-      await apiClient.auth.unlinkGoogle();
+      const result = await unlinkGoogleAction();
+      if (!result.ok) {
+        setStatus('error');
+        return;
+      }
       await reload();
     } catch {
       setStatus('error');

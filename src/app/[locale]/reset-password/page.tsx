@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 
 import { Link, useRouter } from '../../../i18n/navigation';
-import { apiClient } from '../../../lib/apiClient';
+import { resetPassword } from '../../../lib/db/password-reset.actions';
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -41,10 +41,14 @@ function ResetPasswordForm() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await apiClient.auth.resetPassword(token!, password);
+      const result = await resetPassword(token!, password);
+      if (!result.ok) {
+        // 過期、用過、或根本是亂編的 token，一律回同一個錯誤
+        setError(t('expired'));
+        return;
+      }
       router.push('/login');
     } catch {
-      // 過期、用過、或根本是亂編的 token，後端一律回同一個錯誤
       setError(t('expired'));
     } finally {
       setIsSubmitting(false);

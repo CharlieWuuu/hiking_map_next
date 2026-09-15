@@ -2,7 +2,7 @@
 
 import { headers } from 'next/headers';
 
-import { getAuthMethods as queryAuthMethods, registerUser, validateUser, writeAuditLog } from './auth';
+import { unlinkGoogle as clearGoogleLink, getAuthMethods as queryAuthMethods, registerUser, validateUser, writeAuditLog, setEmail as writeEmail } from './auth';
 import { clearSessionCookie, getSession, setSessionCookie, signSessionToken } from './session';
 
 export type AuthActionResult = { ok: true; username: string } | { ok: false; error: 'invalid-credentials' | 'username-taken' | 'email-taken' };
@@ -63,4 +63,18 @@ export async function getAuthMethods(): Promise<{ hasPassword: boolean; hasGoogl
   const session = await getSession();
   if (!session) return null;
   return queryAuthMethods(session.userId);
+}
+
+// 設定頁的兩個寫入動作。userId 一律取自登入態，不接受用戶端傳入，
+// 否則帶個別人的 id 就能改到別人的帳號。
+export async function setEmail(email: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: '請先登入' };
+  return writeEmail(session.userId, email);
+}
+
+export async function unlinkGoogle(): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: '請先登入' };
+  return clearGoogleLink(session.userId);
 }

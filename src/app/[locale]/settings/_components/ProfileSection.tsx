@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { apiClient } from '../../../../lib/apiClient';
+import { updateMyProfile } from '../../../../lib/db/profile.actions';
 
 type Props = {
   avatar: string;
@@ -24,7 +24,11 @@ export default function ProfileSection({ avatar, description }: Props) {
     e.preventDefault();
     setStatus('saving');
     try {
-      await apiClient.profile.updateMe({ avatar: avatarValue, description: descriptionValue });
+      const updated = await updateMyProfile({ avatar: avatarValue, description: descriptionValue });
+      if (!updated) {
+        setStatus('error');
+        return;
+      }
       setStatus('saved');
       router.refresh();
     } catch {
