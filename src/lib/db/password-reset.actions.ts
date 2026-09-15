@@ -10,7 +10,8 @@ export async function requestPasswordReset(email: string): Promise<void> {
 
   // 重設連結要指回自己。Vercel 上由 NEXT_PUBLIC_SITE_URL 指定，
   // 本機沒設就退回 localhost
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:4219';
+  // 結尾的斜線要去掉，否則連結會變成 //reset-password
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:4219').replace(/\/+$/, '');
   const link = `${baseUrl}/reset-password?token=${created.token}`;
 
   await sendMail(
