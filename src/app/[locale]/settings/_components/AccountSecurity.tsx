@@ -6,6 +6,7 @@ import { useState } from 'react';
 
 import type { AuthMethods } from '../../../../lib/api/adapters/auth';
 import { apiClient } from '../../../../lib/apiClient';
+import { getAuthMethods } from '../../../../lib/db/auth.actions';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 
@@ -25,7 +26,7 @@ export default function AccountSecurity({ initialMethods }: Props) {
   const googleLink = useSearchParams().get('googleLink');
 
   async function reload() {
-    const result = await apiClient.auth.getMethods().catch(() => null);
+    const result = await getAuthMethods().catch(() => null);
     if (!result) return;
     setMethods(result);
     setEmail(result.email ?? '');

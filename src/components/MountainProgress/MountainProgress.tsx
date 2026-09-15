@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
-import type { MountainProgress as MountainProgressData } from '../../lib/api/adapters/hikes';
+import type { MountainProgress as MountainProgressData } from '../../lib/db/hikes';
 
 type Props = {
   progress: MountainProgressData;

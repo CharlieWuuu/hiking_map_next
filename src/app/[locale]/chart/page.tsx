@@ -5,8 +5,7 @@ import ChartRing from '../../../components/ChartRing';
 import HikeStatsCharts from '../../../components/HikeStatsCharts';
 import MountainProgress from '../../../components/MountainProgress';
 import PageLayout from '../../../components/PageLayout';
-import { apiClient } from '../../../lib/apiClient';
-import { findAllHikes, getHikeStats } from '../../../lib/db/hikes';
+import { findAllHikes, getHikeStats, getMountainProgress } from '../../../lib/db/hikes';
 import { getCurrentUser } from '../../../lib/getCurrentUser';
 
 export default async function ChartPage() {
@@ -15,7 +14,7 @@ export default async function ChartPage() {
 
   const [stats, mountainProgress] = await Promise.all([
     getHikeStats(Number(currentUser.userId)).catch(() => null),
-    apiClient.hikes.getMountainProgress().catch(() => null),
+    getMountainProgress(Number(currentUser.userId)).catch(() => null),
   ]);
   if (!stats) redirect('/login');
 

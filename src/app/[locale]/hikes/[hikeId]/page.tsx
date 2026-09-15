@@ -2,8 +2,8 @@ import { notFound, redirect } from 'next/navigation';
 
 import TrailLayer from '../../../../components/MapView/TrailLayer';
 import PageLayout from '../../../../components/PageLayout';
-import { apiClient } from '../../../../lib/apiClient';
 import { findHikeById } from '../../../../lib/db/hikes';
+import { findAllMountains } from '../../../../lib/db/mountains';
 import { getCurrentUser } from '../../../../lib/getCurrentUser';
 import HikeDetailCard from './_components/HikeDetailCard';
 
@@ -23,7 +23,7 @@ export default async function HikeDetailPage({ params }: { params: Promise<{ hik
   const currentUser = await getCurrentUser();
   if (!currentUser) redirect('/login');
 
-  const [hike, mountains] = await Promise.all([findHikeById(Number(id)), apiClient.mountains.findAll().catch(() => [])]);
+  const [hike, mountains] = await Promise.all([findHikeById(Number(id)), findAllMountains().catch(() => [])]);
   if (!hike || hike.userId !== currentUser.userId) notFound();
 
   const path = getHikePath(hike.geojson);

@@ -464,3 +464,46 @@ export async function findHikesInView(bbox: [number, number, number, number], us
     geojson: row.geojson ? JSON.parse(row.geojson as string) : null,
   }));
 }
+
+export type MountainProgressItem = {
+  id: number;
+  name: string;
+  elevationM: number;
+};
+
+export type MountainProgress = {
+  hundred: { completed: MountainProgressItem[]; missing: MountainProgressItem[] };
+  smallHundred: { completed: MountainProgressItem[]; missing: MountainProgressItem[] };
+};
+
+// 百岳／小百岳的完成進度。一次把兩個分類的山都撈出來，
+// 用 EXISTS 標記使用者是否走過，再在應用層分組——
+// 比起分四次查詢（兩個分類 × 完成/未完成），這樣只需要一次往返。
+export async function getMountainProgress(userId: number): Promise<MountainProgress> {
+  const rows = await sql`
+    SELECT c.name AS category_name, m.id, m.name, m.elevation_m AS "elevationM",
+           EXISTS(
+             SELECT 1 FROM hike_mountains hm
+             JOIN hikes h ON h.id = hm.hike_id
+             WHERE hm.mountain_id = m.id AND h.user_id = ${userId}
+           ) AS completed
+    FROM mountains m
+    JOIN mountain_category_map mcm ON mcm.mountain_id = m.id
+    JOIN categories c ON c.id = mcm.category_id
+    WHERE c.name IN ('百岳', '小百岳')
+    ORDER BY c.name, m.name
+  `;
+
+  const grouped: MountainProgress = {
+    hundred: { completed: [], missing: [] },
+    smallHundred: { completed: [], missing: [] },
+  };
+
+  for (const row of rows) {
+    const key = row.category_name === '百岳' ? 'hundred' : 'smallHundred';
+    const bucket = row.completed ? grouped[key].completed : grouped[key].missing;
+    bucket.push({ id: Number(row.id), name: row.name as string, elevationM: Number(row.elevationM) });
+  }
+
+  return grouped;
+}

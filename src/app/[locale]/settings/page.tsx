@@ -2,7 +2,7 @@ import { getTranslations } from 'next-intl/server';
 
 import PageLayout from '../../../components/PageLayout';
 import { Link } from '../../../i18n/navigation';
-import { getAuthMethods } from '../../../lib/getAuthMethods';
+import { getAuthMethods } from '../../../lib/db/auth';
 import { getCurrentUser } from '../../../lib/getCurrentUser';
 import AccountSecurity from './_components/AccountSecurity';
 import LocaleSelector from './_components/LocaleSelector';
@@ -13,7 +13,8 @@ import ThemeSwitcher from './_components/ThemeSwitcher';
 export default async function SettingsPage() {
   const t = await getTranslations('SettingsPage');
   // 未登入時拿不到，帳號安全區塊就整段不顯示
-  const [authMethods, currentUser] = await Promise.all([getAuthMethods(), getCurrentUser()]);
+  const currentUser = await getCurrentUser();
+  const authMethods = currentUser ? await getAuthMethods(Number(currentUser.userId)) : null;
   return (
     <PageLayout title={t('title')}>
       <div className="flex flex-col gap-4">

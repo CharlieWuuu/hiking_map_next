@@ -7,7 +7,6 @@ import { useRef, useState } from 'react';
 import TrailLayer from '../../../../../components/MapView/TrailLayer';
 import TrailEditCard, { type EditableTrail } from '../../../../../components/TrailEditCard';
 import { useRouter } from '../../../../../i18n/navigation';
-import { apiClient } from '../../../../../lib/apiClient';
 import { createHikeAction } from '../../../../../lib/db/hikes.actions';
 import { GpxParseError, parseGpx, toFeatureCollection, type ParsedGpx, type TrackPoint } from '../../../../../lib/gpx/parseGpx';
 

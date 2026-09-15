@@ -9,8 +9,8 @@ import TrailDetailCardBody from '../../../../../components/TrailDetailCardBody';
 import TrailEditCard, { type EditableTrail } from '../../../../../components/TrailEditCard';
 import { Link } from '../../../../../i18n/navigation';
 import type { Hike } from '../../../../../lib/api/adapters/hikes';
-import { apiClient } from '../../../../../lib/apiClient';
 import { deleteHikeAction, updateHikeAction } from '../../../../../lib/db/hikes.actions';
+import { fetchMountains } from '../../../../../lib/db/hikes.query.actions';
 
 type Props = {
   hike: Hike;
@@ -51,7 +51,7 @@ export default function HikeDetailCard({ hike: initialHike, mountainNames: initi
           // Server Action 只回傳成功與否，本地狀態直接套用剛送出的內容
           setHike((prev) => ({ ...prev, ...patch }));
           if (patch.mountainIds) {
-            const mountains = await apiClient.mountains.findAll();
+            const mountains = await fetchMountains();
             setMountainNames(
               patch.mountainIds.map((id) => mountains.find((mountain) => mountain.id === id)?.name).filter((name): name is string => Boolean(name))
             );

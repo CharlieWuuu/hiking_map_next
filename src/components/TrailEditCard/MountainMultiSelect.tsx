@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import type { Mountain } from '../../lib/api/adapters/mountains';
-import { apiClient } from '../../lib/apiClient';
+import { fetchMountains } from '../../lib/db/hikes.query.actions';
+import type { Mountain } from '../../lib/db/mountains';
 import TagBadge from '../TagBadge';
 import { inputClassName } from './fieldStyles';
 
@@ -18,8 +18,7 @@ export default function MountainMultiSelect({ selectedIds, onChange, searchPlace
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    apiClient.mountains
-      .findAll()
+    fetchMountains()
       .then(setMountains)
       .catch(() => {});
   }, []);

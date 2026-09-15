@@ -98,7 +98,9 @@ function ViewportSync({ trails, userId, category }: { trails?: MapTrail[]; userI
   // 動態模式：視野或縮放層級一變就重新跟 findInView 要資料
   useEffect(() => {
     if (!isDynamic || !bounds) return;
-    void fetchInView(bounds, zoom, userId, category);
+    // userId 不傳給 fetchInView（伺服器端自己從登入態取），
+    // 但仍留在 deps 裡：換人登入時視野內的資料要重抓
+    void fetchInView(bounds, zoom, category);
   }, [isDynamic, bounds, zoom, userId, category, fetchInView]);
 
   // 動態模式不需要再額外去 R2 抓完整軌跡：後端 findInView 已經依 zoom 判斷，
