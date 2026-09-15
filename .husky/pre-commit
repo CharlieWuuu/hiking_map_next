@@ -1,4 +1,3 @@
 #!/usr/bin/env sh
 
-cd hiking_map_frontend_next
 npx lint-staged
