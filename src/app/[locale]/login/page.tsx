@@ -6,8 +6,6 @@ import { useState } from 'react';
 import { Link, useRouter } from '../../../i18n/navigation';
 import { useAuth } from '../../../lib/authStore';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
-
 export default function LoginPage() {
   const t = useTranslations('LoginPage');
   const router = useRouter();
@@ -80,10 +78,7 @@ export default function LoginPage() {
       </div>
 
       <div className="flex w-full max-w-xs flex-col gap-3">
-        <a
-          href={`${API_BASE_URL}/auth/google`}
-          className="bg-panel hover:bg-panel-active rounded-panel flex items-center justify-center gap-2 px-4 py-2 transition-colors"
-        >
+        <a href="/api/auth/google" className="bg-panel hover:bg-panel-active rounded-panel flex items-center justify-center gap-2 px-4 py-2 transition-colors">
           {t('oauth.google')}
         </a>
       </div>

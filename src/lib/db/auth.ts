@@ -158,3 +158,45 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
   await sql`UPDATE password_reset_tokens SET used_at = now() WHERE id = ${record.id}`;
   return { ok: true };
 }
+
+// --- Google 登入 ---
+
+// 用 Google 的 sub 找帳號，沒有就開一個。
+// username 由 email 的前半段推導，撞名時往後加數字。
+export async function findOrCreateGoogleUser(googleId: string, email: string | null, displayName: string): Promise<AuthUser> {
+  const existing = await sql`
+    SELECT id, username, email, google_id AS "googleId" FROM users WHERE google_id = ${googleId} LIMIT 1
+  `;
+  if (existing[0]) {
+    const user = existing[0];
+    return { id: Number(user.id), username: user.username as string, email: (user.email as string) ?? null, googleId: (user.googleId as string) ?? null };
+  }
+
+  const base = (email?.split('@')[0] || displayName).replace(/[^a-zA-Z0-9_]/g, '') || 'hiker';
+  let username = base;
+  let suffix = 0;
+  // 撞名就往後加數字。併發時仍可能兩個人同時選到同一個名字，
+  // 這時 users.username 的唯一索引會擋下來，讓 INSERT 失敗而不是產生重複帳號。
+  while ((await sql`SELECT 1 FROM users WHERE username = ${username} LIMIT 1`).length > 0) {
+    suffix += 1;
+    username = `${base}${suffix}`;
+  }
+
+  const inserted = await sql`
+    INSERT INTO users (username, password, google_id, email)
+    VALUES (${username}, NULL, ${googleId}, ${email})
+    RETURNING id, username, email, google_id AS "googleId"
+  `;
+  const user = inserted[0];
+  await sql`INSERT INTO profiles (user_id, avatar, description) VALUES (${user.id}, '', '')`;
+
+  return { id: Number(user.id), username: user.username as string, email: (user.email as string) ?? null, googleId: (user.googleId as string) ?? null };
+}
+
+// 把 Google 帳號綁到現有帳號上。同一個 Google 帳號不能綁在兩個地方。
+export async function linkGoogle(userId: number, googleId: string): Promise<{ ok: true } | { ok: false; error: 'conflict' }> {
+  const existing = await sql`SELECT id FROM users WHERE google_id = ${googleId} LIMIT 1`;
+  if (existing[0] && Number(existing[0].id) !== userId) return { ok: false, error: 'conflict' };
+  await sql`UPDATE users SET google_id = ${googleId} WHERE id = ${userId}`;
+  return { ok: true };
+}

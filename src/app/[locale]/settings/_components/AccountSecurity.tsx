@@ -7,8 +7,6 @@ import { useState } from 'react';
 import type { AuthMethods } from '../../../../lib/api/adapters/auth';
 import { getAuthMethods, setEmail as saveEmailAction, unlinkGoogle as unlinkGoogleAction } from '../../../../lib/db/auth.actions';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
-
 type Props = {
   // 由設定頁在伺服器端取好傳進來，這裡就不需要在 effect 裡再抓一次
   initialMethods: AuthMethods;
@@ -115,7 +113,7 @@ export default function AccountSecurity({ initialMethods }: Props) {
             </button>
           ) : (
             <a
-              href={`${API_BASE_URL}/auth/google?mode=link`}
+              href="/api/auth/google?mode=link"
               className="bg-panel-active hover:bg-panel-active-lighten rounded-panel shrink-0 px-3 py-1.5 text-sm transition-colors"
             >
               {t('googleLink')}
