@@ -191,11 +191,6 @@
     "town": "鄉鎮",
     "date": "時間"
   },
-  "ProfileCollectionsPage": {
-    "title": "收藏清單",
-    "empty": "還沒有收藏任何路線",
-    "backToProfile": "返回統計"
-  },
   "HikeDetailPage": {
     "backToProfile": "返回地圖與資料",
     "edit": "編輯",

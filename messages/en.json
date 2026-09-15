@@ -191,11 +191,6 @@
     "town": "Town",
     "date": "Date"
   },
-  "ProfileCollectionsPage": {
-    "title": "Collections",
-    "empty": "No trails collected yet",
-    "backToProfile": "Back to stats"
-  },
   "HikeDetailPage": {
     "backToProfile": "Back to map & data",
     "edit": "Edit",
