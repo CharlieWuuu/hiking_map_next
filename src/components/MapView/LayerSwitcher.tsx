@@ -75,17 +75,17 @@ export default function LayerSwitcher({ activeKey, onActiveKeyChange, styleOverr
                       key={key}
                       type="button"
                       onClick={() => overlays.onToggle(key)}
-                      className={`hover:bg-panel-active flex items-center gap-2 rounded px-2 py-1 text-left text-xs transition-colors ${
-                        overlays.visible[key] ? 'text-background-contrary' : 'text-background-contrary/40'
-                      }`}
+                      className="hover:bg-panel-active -mx-2 flex items-center gap-2 rounded px-2 py-1 text-left text-xs transition-colors"
                     >
+                      {/* 名稱沿用「透明度」那排的樣式：同樣 text-xs、不因開關狀態變淡，
+                          開關狀態只靠左側色塊的實心／空心表達 */}
                       <span
                         aria-hidden
                         className="h-3 w-3 shrink-0 rounded-sm border"
                         style={{ borderColor: OVERLAY_COLOR[key], backgroundColor: overlays.visible[key] ? OVERLAY_COLOR[key] : 'transparent' }}
                       />
-                      <span className="whitespace-nowrap">{overlays.labels[key]}</span>
-                      <span className="text-background-contrary/50 ml-auto whitespace-nowrap tabular-nums">
+                      <span className="shrink-0 whitespace-nowrap">{overlays.labels[key]}</span>
+                      <span className="ml-auto w-10 shrink-0 text-right whitespace-nowrap tabular-nums">
                         {overlays.isLoading ? overlays.loadingLabel : count ? `${count.completed}/${count.total}` : ''}
                       </span>
                     </button>

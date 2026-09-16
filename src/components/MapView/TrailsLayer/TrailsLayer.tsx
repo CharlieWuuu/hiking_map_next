@@ -254,12 +254,11 @@ function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMa
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #ffffff;
+      /* 黑字而非白字：四個分類色對黑字的對比度都在 5.5 以上（淺藍甚至 12.8），
+         對白字卻只有 1.65～3.8。用對的文字顏色就夠清楚，不需要靠陰影硬撐 */
+      color: #1a1a1a;
       font-weight: bold;
       font-size: ${count < 100 ? 13 : 12}px;
-      /* 實心圓餅上的數字要壓在任何一個扇形顏色上都看得清楚，
-         用深色描邊把字從底下的色塊拉開 */
-      text-shadow: 0 0 3px rgba(0, 0, 0, 0.9), 0 1px 2px rgba(0, 0, 0, 0.8);
     ">${count}</div>`,
     className: '',
     iconSize: L.point(size, size, true),
