@@ -26,6 +26,10 @@ export type ReferenceLayers = {
   hundred: ReferenceMountain[];
   smallHundred: ReferenceMountain[];
   hundredTrail: ReferenceTrail[];
+  // 山頭透過 trail_mountains 對應到的步道幾何。一座山可以有多條路上去，
+  // 所以是「這個分類底下所有相關步道」而不是一山一線
+  hundredLines: ReferenceTrail[];
+  smallHundredLines: ReferenceTrail[];
 };
 
 const MOUNTAIN_CATEGORY_NAMES = { hundred: '百岳', smallHundred: '小百岳' } as const;
@@ -102,12 +106,47 @@ async function findTrailLayer(userId: number | null): Promise<ReferenceTrail[]> 
   }));
 }
 
+// 某個山頭分類底下、所有經由 trail_mountains 關聯到的步道幾何。
+// 完成狀態沿用步道本身：走過那條步道就算完成
+async function findMountainTrailLines(categoryName: string, userId: number | null): Promise<ReferenceTrail[]> {
+  const rows = await sql`
+    SELECT DISTINCT
+      t.id,
+      t.name,
+      ST_Y(tg.center::geometry) AS lat,
+      ST_X(tg.center::geometry) AS lng,
+      ST_AsGeoJSON(tg.geom_simplified, ${GEOJSON_PRECISION}) AS geojson,
+      ${userId}::int IS NOT NULL
+        AND EXISTS (
+          SELECT 1 FROM hikes h WHERE h.trail_id = t.id AND h.user_id = ${userId}
+        ) AS completed
+    FROM mountains m
+    JOIN mountain_category_map mcm ON mcm.mountain_id = m.id
+    JOIN categories c ON c.id = mcm.category_id
+    JOIN trail_mountains tm ON tm.mountain_id = m.id
+    JOIN trails t ON t.id = tm.trail_id
+    JOIN trail_geometries tg ON tg.trail_id = t.id
+    WHERE c.name = ${categoryName} AND tg.geom_simplified IS NOT NULL
+  `;
+
+  return rows.map((row) => ({
+    id: Number(row.id),
+    name: row.name as string,
+    lat: row.lat === null || row.lat === undefined ? null : Number(row.lat),
+    lng: row.lng === null || row.lng === undefined ? null : Number(row.lng),
+    path: flattenPath((row.geojson as string) ?? null),
+    completed: Boolean(row.completed),
+  }));
+}
+
 export async function findReferenceLayers(userId: number | null): Promise<ReferenceLayers> {
-  const [hundred, smallHundred, hundredTrail] = await Promise.all([
+  const [hundred, smallHundred, hundredTrail, hundredLines, smallHundredLines] = await Promise.all([
     findMountainLayer(MOUNTAIN_CATEGORY_NAMES.hundred, userId),
     findMountainLayer(MOUNTAIN_CATEGORY_NAMES.smallHundred, userId),
     findTrailLayer(userId),
+    findMountainTrailLines(MOUNTAIN_CATEGORY_NAMES.hundred, userId),
+    findMountainTrailLines(MOUNTAIN_CATEGORY_NAMES.smallHundred, userId),
   ]);
 
-  return { hundred, smallHundred, hundredTrail };
+  return { hundred, smallHundred, hundredTrail, hundredLines, smallHundredLines };
 }

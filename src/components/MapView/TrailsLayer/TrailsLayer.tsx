@@ -478,13 +478,19 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
           <ReferenceTrailLayer items={referenceLayers.hundredTrail} kind="hundredTrail" />
         </LayerPane>
       )}
+      {/* 山頭也畫線：透過 trail_mountains 對應到的步道幾何。
+          一座山可以有很多條路上去，所以是多對多，不是一山一線。
+          沒有關聯步道的山頭（百岳 70 座、小百岳 17 座）仍以點呈現，
+          否則那些山會整個消失 */}
       {!showClusterOnly && referenceLayers && visibleLayers?.hundred && (
         <LayerPane name="layer-hundred" zIndex={paneZ('hundred')} opacity={opacityOf('hundred')}>
+          <ReferenceTrailLayer items={referenceLayers.hundredLines} kind="hundred" />
           <ReferenceMountainLayer items={referenceLayers.hundred} kind="hundred" />
         </LayerPane>
       )}
       {!showClusterOnly && referenceLayers && visibleLayers?.smallHundred && (
         <LayerPane name="layer-smallHundred" zIndex={paneZ('smallHundred')} opacity={opacityOf('smallHundred')}>
+          <ReferenceTrailLayer items={referenceLayers.smallHundredLines} kind="smallHundred" />
           <ReferenceMountainLayer items={referenceLayers.smallHundred} kind="smallHundred" />
         </LayerPane>
       )}
