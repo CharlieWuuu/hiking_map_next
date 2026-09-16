@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { CircleMarker, Tooltip, useMap } from 'react-leaflet';
+import { CircleMarker, Popup, useMap } from 'react-leaflet';
 
 import MapView from '../../../../../../components/MapView';
 
@@ -34,6 +34,19 @@ function FlyToSelected({ items, selectedId }: { items: MappedItem[]; selectedId:
   return null;
 }
 
+// 選中的項目浮出資訊卡。跟資料頁的 ActiveTrailPopup 一樣直接掛在 MapContainer 底下、
+// 不依附任何 marker——這樣 react-leaflet 掛載時就會自動開啟，不必自己去呼叫 openPopup
+function SelectedPopup({ item }: { item: MappedItem }) {
+  return (
+    <Popup position={[item.lat, item.lng]} closeButton={false} autoPan={false} className="hiking-map-popup" minWidth={180}>
+      <div className="bg-panel text-background-contrary rounded-panel flex flex-col gap-1 p-3">
+        <span className="text-base font-bold">{item.name}</span>
+        {item.meta && <span className="text-background-contrary/60 text-xs">{item.meta}</span>}
+      </div>
+    </Popup>
+  );
+}
+
 type Props = {
   items: MappedItem[];
   selectedId: string | number | null;
@@ -41,6 +54,8 @@ type Props = {
 };
 
 export default function MountainMap({ items, selectedId, onSelect }: Props) {
+  const selected = items.find((item) => item.id === selectedId) ?? null;
+
   return (
     <MapView center={TAIWAN_CENTER} zoom={TAIWAN_ZOOM} className="rounded-panel h-full w-full overflow-hidden">
       <FlyToSelected items={items} selectedId={selectedId} />
@@ -62,18 +77,11 @@ export default function MountainMap({ items, selectedId, onSelect }: Props) {
               fillOpacity: 1,
             }}
             eventHandlers={{ click: () => onSelect(item.id) }}
-          >
-            {/* 沿用資料頁懸浮卡的樣式：Leaflet 預設泡泡的白底／邊框／箭頭由
-                .hiking-map-tooltip 拔掉，內層自己畫一張 bg-panel 卡片 */}
-            <Tooltip direction="top" offset={[0, -8]} className="hiking-map-tooltip">
-              <div className="bg-panel text-background-contrary rounded-panel flex flex-col gap-1 p-3">
-                <span className="text-base font-bold">{item.name}</span>
-                {item.meta && <span className="text-background-contrary/60 text-xs">{item.meta}</span>}
-              </div>
-            </Tooltip>
-          </CircleMarker>
+          />
         );
       })}
+
+      {selected && <SelectedPopup key={selected.id} item={selected} />}
     </MapView>
   );
 }

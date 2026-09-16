@@ -58,21 +58,6 @@ main:has(.page-wide) {
   display: none;
 }
 
-/* 地圖標記的懸浮提示：同樣拔掉 Leaflet 預設的白底／邊框／陰影／箭頭，
-   讓內層沿用 .hiking-map-popup 那張卡的 bg-panel 樣式，兩張地圖的浮層語言一致 */
-.leaflet-tooltip.hiking-map-tooltip {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
-  padding: 0;
-  color: inherit;
-  white-space: nowrap;
-}
-.leaflet-tooltip.hiking-map-tooltip::before {
-  display: none;
-}
-
 /* 細窄、跟卡片同色系的捲軸，取代瀏覽器預設樣式。平常捲軸透明不佔視覺份量，滑鼠移進容器才顯示。
    純用標準 scrollbar-color/-width，不疊加 ::-webkit-scrollbar 系列——兩者同時設定在 Chromium 上
    會互相干擾導致 hover 沒有效果，只留 scrollbar-color 這一套，跟 :hover 才會確實生效 */
