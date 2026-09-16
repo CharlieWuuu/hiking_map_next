@@ -6,6 +6,7 @@ import { findHikesPaginated } from '../../../lib/db/hikes';
 import { getCurrentUser } from '../../../lib/getCurrentUser';
 import { TRAIL_CATEGORIES, type TrailCategory } from '../../../testing/mocks/trails/trails.data';
 import ProfileTrailExplorerWithNavigation from './_components/ProfileTrailExplorerWithNavigation';
+import { PAGE_SIZE } from './constants';
 
 type Props = {
   searchParams: Promise<{ fullscreen?: string; edit?: string; lat?: string; lng?: string; z?: string; category?: string }>;
@@ -19,8 +20,6 @@ function getHikePath(geojson: object | null | undefined): [number, number][] {
   if (geojson.type === 'MultiLineString') return (geojson.coordinates as [number, number][][])[0] ?? [];
   return [];
 }
-
-const PAGE_SIZE = 20;
 
 export default async function DataPage({ searchParams }: Props) {
   const { fullscreen: rawFullscreen, edit, lat, lng, z, category: rawCategory } = await searchParams;

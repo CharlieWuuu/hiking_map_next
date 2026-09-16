@@ -9,14 +9,13 @@ import { deleteHikeAction, updateHikeAction } from '../../../../lib/db/hikes.act
 import { fetchHikePageInfo, fetchHikesPage, fetchMountains } from '../../../../lib/db/hikes.query.actions';
 import type { Mountain } from '../../../../lib/db/mountains';
 import { useMapStore } from '../../../../lib/mapStore';
+import { PAGE_SIZE } from '../constants';
 import ExpandToggleButton from './ExpandToggleButton';
 import TrailExplorerList from './TrailExplorerList';
 import TrailExplorerToolbar from './TrailExplorerToolbar';
 import TrailListPagination from './TrailListPagination';
 
 type Trail = EditableTrail & Pick<MapTrail, 'path' | 'trackUrl' | 'bbox'> & { categoryNames?: string[] };
-
-const PAGE_SIZE = 20;
 
 type Props = {
   trails: Trail[];
