@@ -45,8 +45,8 @@ type Props = {
   // 疊在自己軌跡之上的官方名單圖層；沒開的圖層不會傳進來
   referenceLayers?: ReferenceLayers | null;
   visibleLayers?: { hike: boolean; hundred: boolean; smallHundred: boolean; hundredTrail: boolean };
-  // 由上而下的圖層順序，決定各層在地圖上的疊放次序
-  layerOrder?: MarkerKind[];
+  // 各層的不透明度，重疊處靠它分辨
+  layerOpacity?: Record<MarkerKind, number>;
   // 疊圖開關交給地圖自己的圖層面板顯示，不另外浮一塊在地圖上
   overlays?: OverlayControl;
 };
@@ -110,7 +110,7 @@ const LayerPaneContext = createContext<string | undefined>(undefined);
 // 每個圖層一個 Leaflet pane，用 zIndex 決定誰疊在誰上面。
 // 不靠 JSX 先後順序是因為那只影響 DOM 插入順序，Leaflet 把所有向量圖形
 // 都畫進同一個 overlayPane，先後會被它自己的管理覆蓋掉——pane 才是它的正解
-function LayerPane({ name, zIndex, children }: { name: string; zIndex: number; children: ReactNode }) {
+function LayerPane({ name, zIndex, opacity, children }: { name: string; zIndex: number; opacity: number; children: ReactNode }) {
   const map = useMap();
   // 自己建 pane 並設 zIndex，不用 react-leaflet 的 <Pane>——它掛載時也會呼叫
   // createPane，而 Leaflet 對同名 pane 會直接拋錯（A pane with this name already exists）。
@@ -120,6 +120,7 @@ function LayerPane({ name, zIndex, children }: { name: string; zIndex: number; c
   pane.style.zIndex = String(zIndex);
   // 疊圖只是背景參考，不接滑鼠事件，才不會擋住底下軌跡的點擊
   pane.style.pointerEvents = name === 'layer-hike' ? '' : 'none';
+  pane.style.opacity = String(opacity);
 
   // 把 pane 名稱交給底下的向量圖形，Leaflet 會把它們畫進這個 pane
   return <LayerPaneContext.Provider value={name}>{children}</LayerPaneContext.Provider>;
@@ -379,7 +380,7 @@ function useActiveHikeDetail(activeSlug: string | null, isDynamic: boolean) {
   return isDynamic && activeSlug && String(detail?.id) === activeSlug ? detail : null;
 }
 
-export default function TrailsLayer({ trails, userId, category, resizeKey, initialViewport, referenceLayers, visibleLayers, overlays, layerOrder }: Props) {
+export default function TrailsLayer({ trails, userId, category, resizeKey, initialViewport, referenceLayers, visibleLayers, overlays, layerOpacity }: Props) {
   const hoverSlug = useMapStore((state) => state.hoverSlug);
   const activeSlug = useMapStore((state) => state.activeSlug);
   const activeBbox = useMapStore((state) => state.activeBbox);
@@ -436,10 +437,10 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
 
   // < CLUSTER_ZOOM 只畫點位（走 cluster），達到門檻才畫線；固定模式一律畫線，本來資料量就小。
   // focus 純粹是 UI 狀態（外框樣式、popup），不影響地圖該載什麼——資料完全由 zoom/視野決定
-  // order[0] 畫在最上層。Leaflet 的 overlayPane 預設 z-index 400，
-  // 各層在它之上依序排開，數字越大越上面
-  const order = layerOrder ?? ['hike', 'hundredTrail', 'hundred', 'smallHundred'];
-  const paneZ = (kind: MarkerKind) => 400 + (order.length - order.indexOf(kind));
+  // 疊放順序固定：名單在下、自己的軌跡在上。重疊處靠各層透明度分辨
+  const ORDER: MarkerKind[] = ['hike', 'hundredTrail', 'hundred', 'smallHundred'];
+  const paneZ = (kind: MarkerKind) => 400 + (ORDER.length - ORDER.indexOf(kind));
+  const opacityOf = (kind: MarkerKind) => layerOpacity?.[kind] ?? 1;
 
   const showClusterOnly = isDynamic && zoom < CLUSTER_ZOOM;
 
@@ -458,7 +459,7 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
       {/* 疊圖的線先畫，自己的軌跡才會蓋在它上層——名單是背景參考，不該遮住主角。
           遠 zoom（showClusterOnly）時不畫線，只讓點併進下面的 cluster */}
       {!showClusterOnly && referenceLayers && visibleLayers?.hundredTrail && (
-        <LayerPane name="layer-hundredTrail" zIndex={paneZ('hundredTrail')}>
+        <LayerPane name="layer-hundredTrail" zIndex={paneZ('hundredTrail')} opacity={opacityOf('hundredTrail')}>
           <ReferenceTrailLayer items={referenceLayers.hundredTrail} />
         </LayerPane>
       )}
@@ -498,7 +499,7 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
         // 散在線上的小圓點只會干擾判讀。名單的分布在遠 zoom 的
         // cluster 圓餅上已經看得到，近看時讓位給線
         visibleLayers?.hike !== false && (
-          <LayerPane name="layer-hike" zIndex={paneZ('hike')}>
+          <LayerPane name="layer-hike" zIndex={paneZ('hike')} opacity={opacityOf('hike')}>
             {lineTrails.map((trail) => {
               // 完整軌跡還沒到就先畫簡化線，載好再換掉，中間不要出現空白
               const path = tracks.get(trail.slug)?.path ?? trail.path;

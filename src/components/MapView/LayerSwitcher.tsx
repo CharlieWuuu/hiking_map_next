@@ -1,7 +1,7 @@
 'use client';
 
 import L from 'leaflet';
-import { ChevronDown, ChevronUp, Layers, X } from 'lucide-react';
+import { Layers, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { BASE_MAPS, type BaseMapKey } from './baseMaps';
@@ -13,14 +13,15 @@ import { BASE_MAPS, type BaseMapKey } from './baseMaps';
 export type OverlayKey = 'hike' | 'hundred' | 'smallHundred' | 'hundredTrail';
 
 export type OverlayControl = {
-  // 由上而下的顯示順序，也是地圖上的繪製順序（越上面畫在越上層）
   order: OverlayKey[];
   visible: Record<OverlayKey, boolean>;
+  // 每層各自的不透明度（0～1）。重疊處靠透明度分辨誰在上面，
+  // 比調整疊放順序直覺，也順便解決線壓線看不清楚的問題
+  opacity: Record<OverlayKey, number>;
   counts: Record<OverlayKey, { completed: number; total: number } | null>;
   isLoading: boolean;
   onToggle: (key: OverlayKey) => void;
-  // 把 index 的圖層往 direction 方向移動一格
-  onReorder: (index: number, direction: -1 | 1) => void;
+  onOpacityChange: (key: OverlayKey, value: number) => void;
   labels: Record<OverlayKey, string>;
   loadingLabel: string;
   title: string;
@@ -73,13 +74,17 @@ export default function LayerSwitcher({ activeKey, onActiveKeyChange, styleOverr
             <>
               <p className="mb-2 text-sm font-bold">{overlays.title}</p>
               <div className="mb-4 flex flex-col gap-1">
-                {overlays.order.map((key, index) => {
+                {overlays.order.map((key) => {
                   const count = overlays.counts[key];
                   return (
-                    <div key={key} className="hover:bg-panel-active -mx-2 flex items-center gap-2 rounded px-2 py-1 text-xs transition-colors">
+                    <div key={key} className="-mx-2 flex flex-col gap-1 rounded px-2 py-1 text-xs">
                       {/* 名稱沿用「透明度」那排的樣式：同樣 text-xs、不因開關狀態變淡，
                           開關狀態只靠左側色塊的實心／空心表達 */}
-                      <button type="button" onClick={() => overlays.onToggle(key)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                      <button
+                        type="button"
+                        onClick={() => overlays.onToggle(key)}
+                        className="hover:bg-panel-active -mx-1 flex items-center gap-2 rounded px-1 text-left"
+                      >
                         <span
                           aria-hidden
                           className="h-3 w-3 shrink-0 rounded-sm border"
@@ -90,27 +95,19 @@ export default function LayerSwitcher({ activeKey, onActiveKeyChange, styleOverr
                           {overlays.isLoading && key !== 'hike' ? overlays.loadingLabel : count ? `${count.completed}/${count.total}` : ''}
                         </span>
                       </button>
-                      {/* 上下箭頭調整繪製順序：越上面的圖層畫在越上層 */}
-                      <span className="flex shrink-0 flex-col">
-                        <button
-                          type="button"
-                          onClick={() => overlays.onReorder(index, -1)}
-                          disabled={index === 0}
-                          className="text-background-contrary/60 hover:text-background-contrary disabled:opacity-20"
-                          aria-label={`${overlays.labels[key]} 上移`}
-                        >
-                          <ChevronUp className="h-3 w-3" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => overlays.onReorder(index, 1)}
-                          disabled={index === overlays.order.length - 1}
-                          className="text-background-contrary/60 hover:text-background-contrary disabled:opacity-20"
-                          aria-label={`${overlays.labels[key]} 下移`}
-                        >
-                          <ChevronDown className="h-3 w-3" />
-                        </button>
-                      </span>
+                      {/* 開著才給調透明度——關掉的圖層調它沒有意義 */}
+                      {overlays.visible[key] && (
+                        <input
+                          type="range"
+                          min={0.15}
+                          max={1}
+                          step={0.05}
+                          value={overlays.opacity[key]}
+                          onChange={(e) => overlays.onOpacityChange(key, parseFloat(e.target.value))}
+                          className="slider-themed w-full"
+                          aria-label={`${overlays.labels[key]} 透明度`}
+                        />
+                      )}
                     </div>
                   );
                 })}
@@ -152,7 +149,7 @@ export default function LayerSwitcher({ activeKey, onActiveKeyChange, styleOverr
                 step={0.01}
                 value={activeSetting.opacity}
                 onChange={(e) => onStyleOverrideChange(activeKey, { opacity: parseFloat(e.target.value) })}
-                className="w-full"
+                className="slider-themed w-full"
               />
               <span className="w-10 shrink-0 text-right">{Math.round(activeSetting.opacity * 100)}%</span>
             </div>
@@ -165,7 +162,7 @@ export default function LayerSwitcher({ activeKey, onActiveKeyChange, styleOverr
                 step={0.01}
                 value={activeSetting.saturate}
                 onChange={(e) => onStyleOverrideChange(activeKey, { saturate: parseFloat(e.target.value) })}
-                className="w-full"
+                className="slider-themed w-full"
               />
               <span className="w-10 shrink-0 text-right">{Math.round(activeSetting.saturate * 100)}%</span>
             </div>

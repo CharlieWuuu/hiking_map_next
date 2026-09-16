@@ -57,8 +57,14 @@ export default function ProfileTrailExplorer({
   // 官方名單疊圖：資料量不小（百大必訪的簡化幾何合計約 435KB），
   // 所以不隨頁面一起送，等使用者第一次打開任一圖層才去要，之後快取在 state 裡
   // 「我的軌跡」也是一個圖層，預設開著；三個官方名單預設關著。
-  // order 由上而下＝地圖上的繪製順序，越上面畫在越上層
-  const [layerOrder, setLayerOrder] = useState<OverlayKey[]>(['hike', 'hundredTrail', 'hundred', 'smallHundred']);
+  // 疊放順序固定，重疊處靠各層自己的透明度分辨，比調整順序直覺
+  const layerOrder: OverlayKey[] = ['hike', 'hundredTrail', 'hundred', 'smallHundred'];
+  const [layerOpacity, setLayerOpacity] = useState<Record<OverlayKey, number>>({
+    hike: 1,
+    hundred: 1,
+    smallHundred: 1,
+    hundredTrail: 0.7,
+  });
   const [visibleLayers, setVisibleLayers] = useState<Record<OverlayKey, boolean>>({
     hike: true,
     hundred: false,
@@ -72,16 +78,6 @@ export default function ProfileTrailExplorer({
   // 那會多跑一輪 render，lint 也擋。isLoadingLayers 兼作 in-flight 旗標，
   // 連點多個圖層只會發出一次請求
   const loadedRef = useRef(false);
-
-  function handleReorderLayer(index: number, direction: -1 | 1) {
-    setLayerOrder((prev) => {
-      const next = [...prev];
-      const target = index + direction;
-      if (target < 0 || target >= next.length) return prev;
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
-  }
 
   function handleToggleLayer(key: OverlayKey) {
     setVisibleLayers((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -266,14 +262,15 @@ export default function ProfileTrailExplorer({
             initialViewport={initialViewport ?? undefined}
             referenceLayers={referenceLayers}
             visibleLayers={visibleLayers}
-            layerOrder={layerOrder}
+            layerOpacity={layerOpacity}
             overlays={{
               order: layerOrder,
               visible: visibleLayers,
               counts: layerCounts,
               isLoading: isLoadingLayers,
+              opacity: layerOpacity,
               onToggle: handleToggleLayer,
-              onReorder: handleReorderLayer,
+              onOpacityChange: (key, value) => setLayerOpacity((prev) => ({ ...prev, [key]: value })),
               labels: {
                 hike: tMapLayer('myTracks'),
                 hundred: tCategory('hundred'),

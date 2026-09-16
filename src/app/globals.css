@@ -68,3 +68,38 @@ main:has(.page-wide) {
 .scrollbar-subtle:hover {
   scrollbar-color: color-mix(in srgb, var(--color-panel-active) 50%, transparent) transparent;
 }
+
+/* 範圍滑桿改用主題色，取代瀏覽器預設的藍色原生樣式。
+   軌道用 panel-active（跟面板同一階），已填滿的部分與拉桿用 accent，
+   兩端都給 appearance:none 才吃得到自訂樣式 */
+.slider-themed {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-panel-active);
+  outline: none;
+}
+.slider-themed::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--color-accent);
+  cursor: pointer;
+  border: none;
+}
+.slider-themed::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--color-accent);
+  cursor: pointer;
+  border: none;
+}
+.slider-themed::-moz-range-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-panel-active);
+}
