@@ -205,6 +205,8 @@ export type TrailInCategory = {
   name: string;
   county: string | null;
   distanceKm: number | null;
+  lat: number | null;
+  lng: number | null;
   /** 這位使用者是否走過（hikes.trail_id 指向它）；未登入時一律 false */
   completed: boolean;
 };
@@ -228,6 +230,8 @@ export async function findTrailsByCategory(categoryKey: string, userId: number |
       t.name,
       t.county,
       t.distance_km AS "distanceKm",
+      ST_Y(tg.center::geometry) AS lat,
+      ST_X(tg.center::geometry) AS lng,
       ${userId}::int IS NOT NULL
         AND EXISTS (
           SELECT 1 FROM hikes h WHERE h.trail_id = t.id AND h.user_id = ${userId}
@@ -235,6 +239,7 @@ export async function findTrailsByCategory(categoryKey: string, userId: number |
     FROM trails t
     JOIN trail_category_map tcm ON tcm.trail_id = t.id
     JOIN categories c ON c.id = tcm.category_id
+    LEFT JOIN trail_geometries tg ON tg.trail_id = t.id
     WHERE c.name = ${categoryName}
     ORDER BY t.distance_km ASC NULLS LAST, t.name
   `;
@@ -244,6 +249,8 @@ export async function findTrailsByCategory(categoryKey: string, userId: number |
     name: row.name as string,
     county: (row.county as string) ?? null,
     distanceKm: row.distanceKm === null || row.distanceKm === undefined ? null : Number(row.distanceKm),
+    lat: row.lat === null || row.lat === undefined ? null : Number(row.lat),
+    lng: row.lng === null || row.lng === undefined ? null : Number(row.lng),
     completed: Boolean(row.completed),
   }));
 }

@@ -46,6 +46,8 @@ export default async function CategoryPage({ params }: Props) {
           county: trail.county,
           distanceKm: trail.distanceKm,
           completed: trail.completed,
+          lat: trail.lat,
+          lng: trail.lng,
           href: `/trails/${trail.slug}`,
         }))}
       />

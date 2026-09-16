@@ -53,6 +53,8 @@ export type MountainInCategory = {
   elevationM: number;
   county: string | null;
   range: string | null;
+  lat: number | null;
+  lng: number | null;
   /** 這位使用者是否登頂過；未登入時一律 false */
   completed: boolean;
 };
@@ -80,6 +82,8 @@ export async function findMountainsByCategory(categoryKey: string, userId: numbe
       m.elevation_m AS "elevationM",
       m.county,
       m.range,
+      ST_Y(m.location::geometry) AS lat,
+      ST_X(m.location::geometry) AS lng,
       ${userId}::int IS NOT NULL
         AND EXISTS (
           SELECT 1 FROM hike_mountains hm
@@ -99,6 +103,8 @@ export async function findMountainsByCategory(categoryKey: string, userId: numbe
     elevationM: Number(row.elevationM),
     county: (row.county as string) ?? null,
     range: (row.range as string) ?? null,
+    lat: row.lat === null || row.lat === undefined ? null : Number(row.lat),
+    lng: row.lng === null || row.lng === undefined ? null : Number(row.lng),
     completed: Boolean(row.completed),
   }));
 }
