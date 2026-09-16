@@ -79,16 +79,22 @@ function ReferenceMountainLayer({ items, kind }: { items: { id: number; name: st
 function ReferenceTrailLayer({ items }: { items: { id: number; name: string; path: [number, number][]; completed: boolean }[] }) {
   return (
     <>
-      {items.map((item) =>
-        item.path.length > 0 ? (
-          <Polyline
-            key={item.id}
-            positions={item.path.map(([lng, lat]) => [lat, lng] as [number, number])}
-            interactive={false}
-            pathOptions={{ color: item.completed ? REFERENCE_DONE : REFERENCE_TODO, weight: 2, opacity: item.completed ? 0.9 : 0.5 }}
-          />
-        ) : null
-      )}
+      {items.map((item) => {
+        if (item.path.length === 0) return null;
+        const positions = item.path.map(([lng, lat]) => [lat, lng] as [number, number]);
+        // 跟自己的軌跡一樣畫兩層：先鋪一條較寬的白色描邊，再疊上本色。
+        // 底圖是灰階的，單畫一條細藍線壓在山區紋理上會糊掉，白邊把線從底圖分離出來
+        return (
+          <Fragment key={item.id}>
+            <Polyline positions={positions} interactive={false} pathOptions={{ color: '#ffffff', weight: 5, opacity: 0.9 }} />
+            <Polyline
+              positions={positions}
+              interactive={false}
+              pathOptions={{ color: item.completed ? REFERENCE_DONE : REFERENCE_TODO, weight: 2.5, opacity: item.completed ? 1 : 0.75 }}
+            />
+          </Fragment>
+        );
+      })}
     </>
   );
 }
