@@ -28,6 +28,15 @@ export default function CategoryList({ items }: { items: CategoryItem[] }) {
   const [selectedId, setSelectedId] = useState<string | number | null>(null);
   const selectedRef = useRef<HTMLDivElement>(null);
 
+  // 山頭顯示海拔（名單依海拔排序），步道顯示距離（依距離排序）——
+  // 右側數字跟排序依據一致，掃過清單時順序才讀得出來。
+  // 清單右欄與地圖浮層共用這一份，兩邊不會各寫一份而走鐘
+  function metaOf(item: CategoryItem) {
+    if (item.elevationM) return `${item.elevationM.toLocaleString()} ${t('elevationUnit')}`;
+    if (item.distanceKm != null) return `${item.distanceKm} ${t('distanceUnit')}`;
+    return item.county ?? '';
+  }
+
   // completed 只有帶進度的名單才有；沒有的話不顯示進度與篩選
   const hasProgress = items.some((item) => item.completed !== undefined);
   const completedCount = items.filter((item) => item.completed).length;
@@ -43,7 +52,14 @@ export default function CategoryList({ items }: { items: CategoryItem[] }) {
   // 100 個點全開時已完成的那幾個會被蓋住
   const mapped = visible
     .filter((item) => item.lat != null && item.lng != null)
-    .map((item) => ({ id: item.id, name: item.name, lat: item.lat as number, lng: item.lng as number, completed: item.completed }));
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      lat: item.lat as number,
+      lng: item.lng as number,
+      completed: item.completed,
+      meta: metaOf(item),
+    }));
 
   if (items.length === 0) {
     return <p className="text-background-contrary/60 text-sm">{t('empty')}</p>;
@@ -82,15 +98,7 @@ export default function CategoryList({ items }: { items: CategoryItem[] }) {
                   {item.completed && <Check className="text-accent h-4 w-4 shrink-0" aria-label={t('completed')} />}
                   <span className="truncate font-bold">{item.name}</span>
                 </span>
-                <span className="text-background-contrary/60 shrink-0 text-sm">
-                  {/* 山頭顯示海拔（名單依海拔排序），步道顯示距離（依距離排序）——
-                      右側數字跟排序依據一致，掃過清單時順序才讀得出來 */}
-                  {item.elevationM
-                    ? `${item.elevationM.toLocaleString()} ${t('elevationUnit')}`
-                    : item.distanceKm != null
-                      ? `${item.distanceKm} ${t('distanceUnit')}`
-                      : (item.county ?? '')}
-                </span>
+                <span className="text-background-contrary/60 shrink-0 text-sm">{metaOf(item)}</span>
               </>
             );
             const className = `bg-panel rounded-panel flex w-full items-center justify-between gap-2 px-3 py-2 text-left transition-colors ${

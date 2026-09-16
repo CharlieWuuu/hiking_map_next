@@ -11,6 +11,8 @@ export type MappedItem = {
   lat: number;
   lng: number;
   completed?: boolean;
+  // 副標：山頭顯示海拔、步道顯示距離，跟清單右側那欄同一個值
+  meta?: string;
 };
 
 // 台灣本島中心與縮放，讓 100 座山頭一次入鏡
@@ -61,8 +63,13 @@ export default function MountainMap({ items, selectedId, onSelect }: Props) {
             }}
             eventHandlers={{ click: () => onSelect(item.id) }}
           >
-            <Tooltip direction="top" offset={[0, -6]}>
-              {item.name}
+            {/* 沿用資料頁懸浮卡的樣式：Leaflet 預設泡泡的白底／邊框／箭頭由
+                .hiking-map-tooltip 拔掉，內層自己畫一張 bg-panel 卡片 */}
+            <Tooltip direction="top" offset={[0, -8]} className="hiking-map-tooltip">
+              <div className="bg-panel text-background-contrary rounded-panel flex flex-col gap-1 p-3">
+                <span className="text-base font-bold">{item.name}</span>
+                {item.meta && <span className="text-background-contrary/60 text-xs">{item.meta}</span>}
+              </div>
             </Tooltip>
           </CircleMarker>
         );
