@@ -11,6 +11,7 @@ export type CategoryItem = {
   name: string;
   county: string | null;
   elevationM?: number;
+  distanceKm?: number | null;
   range?: string | null;
   completed?: boolean;
   href?: string;
@@ -63,7 +64,13 @@ export default function CategoryList({ items }: { items: CategoryItem[] }) {
                 <span className="truncate font-bold">{item.name}</span>
               </span>
               <span className="text-background-contrary/60 shrink-0 text-sm">
-                {item.elevationM ? `${item.elevationM.toLocaleString()} ${t('elevationUnit')}` : (item.county ?? '')}
+                {/* 山頭顯示海拔（名單依海拔排序），步道顯示距離（依距離排序）——
+                    右側數字跟排序依據一致，掃過清單時順序才讀得出來 */}
+                {item.elevationM
+                  ? `${item.elevationM.toLocaleString()} ${t('elevationUnit')}`
+                  : item.distanceKm != null
+                    ? `${item.distanceKm} ${t('distanceUnit')}`
+                    : (item.county ?? '')}
               </span>
             </>
           );

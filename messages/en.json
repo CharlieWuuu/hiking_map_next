@@ -309,6 +309,7 @@
     "backToSearch": "Back to search",
     "filterAll": "All",
     "filterCompleted": "Completed",
-    "filterNotYet": "Not yet"
+    "filterNotYet": "Not yet",
+    "distanceUnit": "km"
   }
 }

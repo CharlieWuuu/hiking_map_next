@@ -204,6 +204,7 @@ export type TrailInCategory = {
   slug: string;
   name: string;
   county: string | null;
+  distanceKm: number | null;
   /** 這位使用者是否走過（hikes.trail_id 指向它）；未登入時一律 false */
   completed: boolean;
 };
@@ -213,6 +214,9 @@ export type TrailInCategory = {
  *
  * 跟 filterTrails 的差別是多了 completed——瀏覽名單時要看得出
  * 「哪幾條走過、哪幾條還沒」，而不只是列出全部。
+ *
+ * 依距離由短到長排序：步道沒有海拔可排（山頭名單用海拔），依名稱排則
+ * 只是中文筆畫順序、沒有意義；依長度排時「今天想走哪條」一眼就找得到。
  */
 export async function findTrailsByCategory(categoryKey: string, userId: number | null): Promise<TrailInCategory[]> {
   const categoryName = categoryKey ? CATEGORY_KEY_TO_NAME[categoryKey] : null;
@@ -223,6 +227,7 @@ export async function findTrailsByCategory(categoryKey: string, userId: number |
       t.slug,
       t.name,
       t.county,
+      t.distance_km AS "distanceKm",
       ${userId}::int IS NOT NULL
         AND EXISTS (
           SELECT 1 FROM hikes h WHERE h.trail_id = t.id AND h.user_id = ${userId}
@@ -231,13 +236,14 @@ export async function findTrailsByCategory(categoryKey: string, userId: number |
     JOIN trail_category_map tcm ON tcm.trail_id = t.id
     JOIN categories c ON c.id = tcm.category_id
     WHERE c.name = ${categoryName}
-    ORDER BY t.name
+    ORDER BY t.distance_km ASC NULLS LAST, t.name
   `;
 
   return rows.map((row) => ({
     slug: row.slug as string,
     name: row.name as string,
     county: (row.county as string) ?? null,
+    distanceKm: row.distanceKm === null || row.distanceKm === undefined ? null : Number(row.distanceKm),
     completed: Boolean(row.completed),
   }));
 }

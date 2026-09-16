@@ -309,6 +309,7 @@
     "backToSearch": "返回探索",
     "filterAll": "全部",
     "filterCompleted": "已完成",
-    "filterNotYet": "未完成"
+    "filterNotYet": "未完成",
+    "distanceUnit": "公里"
   }
 }
