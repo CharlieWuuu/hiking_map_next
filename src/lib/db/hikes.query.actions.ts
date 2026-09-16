@@ -2,6 +2,7 @@
 
 import { findHikeById, findHikesInView, findHikesPaginated, getHikePageInfo, type Hike, type InViewHike } from './hikes';
 import { findAllMountains, type Mountain } from './mountains';
+import { findReferenceLayers, type ReferenceLayers } from './referenceLayers';
 import { getSession } from './session';
 
 // 給 client component 用的查詢入口（資料頁的分頁、地圖的視野查詢）。
@@ -43,4 +44,12 @@ export async function fetchHikeDetail(hikeId: number): Promise<Hike | null> {
   const hike = await findHikeById(hikeId);
   if (!hike || hike.userId !== session.userId) return null;
   return hike;
+}
+
+// 官方名單疊圖。資料量不小（百大必訪的簡化幾何合計約 435KB），
+// 所以不隨頁面一起送，等使用者真的打開圖層才在瀏覽器端要。
+// 未登入也能看名單，只是不會標完成狀態——跟分類頁一致
+export async function fetchReferenceLayers(): Promise<ReferenceLayers> {
+  const session = await getSession();
+  return findReferenceLayers(session ? session.userId : null);
 }

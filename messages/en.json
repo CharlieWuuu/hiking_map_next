@@ -311,5 +311,9 @@
     "filterCompleted": "Completed",
     "filterNotYet": "Not yet",
     "distanceUnit": "km"
+  },
+  "MapLayerToggle": {
+    "loading": "Loading",
+    "title": "Official lists"
   }
 }

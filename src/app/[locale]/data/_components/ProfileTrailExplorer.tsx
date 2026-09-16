@@ -6,11 +6,13 @@ import { useEffect, useState } from 'react';
 import TrailsLayer, { type MapTrail } from '../../../../components/MapView/TrailsLayer';
 import type { EditableTrail } from '../../../../components/TrailEditCard';
 import { deleteHikeAction, updateHikeAction } from '../../../../lib/db/hikes.actions';
-import { fetchHikePageInfo, fetchHikesPage, fetchMountains } from '../../../../lib/db/hikes.query.actions';
+import { fetchHikePageInfo, fetchHikesPage, fetchMountains, fetchReferenceLayers } from '../../../../lib/db/hikes.query.actions';
 import type { Mountain } from '../../../../lib/db/mountains';
+import type { ReferenceLayers } from '../../../../lib/db/referenceLayers';
 import { useMapStore } from '../../../../lib/mapStore';
 import { PAGE_SIZE } from '../constants';
 import ExpandToggleButton from './ExpandToggleButton';
+import MapLayerToggle, { type LayerKey } from './MapLayerToggle';
 import TrailExplorerList from './TrailExplorerList';
 import TrailExplorerToolbar from './TrailExplorerToolbar';
 import TrailListPagination from './TrailListPagination';
@@ -52,6 +54,30 @@ export default function ProfileTrailExplorer({
   onToggleEditMode,
   initialViewport,
 }: Props) {
+  // 官方名單疊圖：資料量不小（百大必訪的簡化幾何合計約 435KB），
+  // 所以不隨頁面一起送，等使用者第一次打開任一圖層才去要，之後快取在 state 裡
+  const [visibleLayers, setVisibleLayers] = useState<Record<LayerKey, boolean>>({ hundred: false, smallHundred: false, hundredTrail: false });
+  const [referenceLayers, setReferenceLayers] = useState<ReferenceLayers | null>(null);
+  const [isLoadingLayers, setIsLoadingLayers] = useState(false);
+
+  const hasAnyLayerOn = visibleLayers.hundred || visibleLayers.smallHundred || visibleLayers.hundredTrail;
+
+  useEffect(() => {
+    if (!hasAnyLayerOn || referenceLayers || isLoadingLayers) return;
+    setIsLoadingLayers(true);
+    void fetchReferenceLayers()
+      .then(setReferenceLayers)
+      .finally(() => setIsLoadingLayers(false));
+  }, [hasAnyLayerOn, referenceLayers, isLoadingLayers]);
+
+  const layerCounts = referenceLayers
+    ? {
+        hundred: { completed: referenceLayers.hundred.filter((x) => x.completed).length, total: referenceLayers.hundred.length },
+        smallHundred: { completed: referenceLayers.smallHundred.filter((x) => x.completed).length, total: referenceLayers.smallHundred.length },
+        hundredTrail: { completed: referenceLayers.hundredTrail.filter((x) => x.completed).length, total: referenceLayers.hundredTrail.length },
+      }
+    : null;
+
   const t = useTranslations('ProfileDataPage');
   const [trails, setTrails] = useState(initialTrails);
   // hover/選取狀態放在 map store，清單與地圖不必再靠 props 互相轉發
@@ -203,7 +229,22 @@ export default function ProfileTrailExplorer({
               label={isMapFullscreen ? t('collapse') : t('expand')}
             />
           </div>
-          <TrailsLayer userId={userId} category={category} resizeKey={fullscreen} initialViewport={initialViewport ?? undefined} />
+          <div className="absolute bottom-2 left-2 z-1000">
+            <MapLayerToggle
+              visible={visibleLayers}
+              counts={layerCounts}
+              isLoading={isLoadingLayers}
+              onToggle={(key) => setVisibleLayers((prev) => ({ ...prev, [key]: !prev[key] }))}
+            />
+          </div>
+          <TrailsLayer
+            userId={userId}
+            category={category}
+            resizeKey={fullscreen}
+            initialViewport={initialViewport ?? undefined}
+            referenceLayers={referenceLayers}
+            visibleLayers={visibleLayers}
+          />
         </div>
       )}
     </div>

@@ -311,5 +311,9 @@
     "filterCompleted": "已完成",
     "filterNotYet": "未完成",
     "distanceUnit": "公里"
+  },
+  "MapLayerToggle": {
+    "loading": "載入中",
+    "title": "官方名單"
   }
 }

@@ -11,6 +11,7 @@ import MarkerClusterGroup from 'react-leaflet-cluster';
 
 import type { Hike } from '../../../lib/db/hikes';
 import { fetchHikeDetail } from '../../../lib/db/hikes.query.actions';
+import type { ReferenceLayers } from '../../../lib/db/referenceLayers';
 import { CLUSTER_ZOOM, DETAIL_ZOOM, useMapStore, type LngLat } from '../../../lib/mapStore';
 import MapView from '../MapView';
 
@@ -40,10 +41,52 @@ type Props = {
   resizeKey?: unknown;
   // 網址帶著的初始視野（動態模式專用）；沒有就用預設的全台視野
   initialViewport?: { center: [number, number]; zoom: number };
+  // 疊在自己軌跡之上的官方名單圖層；沒開的圖層不會傳進來
+  referenceLayers?: ReferenceLayers | null;
+  visibleLayers?: { hundred: boolean; smallHundred: boolean; hundredTrail: boolean };
 };
 
 const DEFAULT_CENTER: [number, number] = [23.7, 120.9];
 const DEFAULT_ZOOM = 7;
+
+// 官方名單疊圖。配色刻意讓開：金黃是「我的軌跡」的顏色，名單用冷色系，
+// 疊在一起時一眼分得出哪些是自己走過的。已完成的名單項目加亮，未完成的壓暗。
+// 全部 interactive={false}——疊圖只是背景參考，不該搶走軌跡的點擊與 hover
+const REFERENCE_DONE = '#7FD4FF';
+const REFERENCE_TODO = '#4A6B7C';
+
+function ReferenceMountainLayer({ items }: { items: { id: number; name: string; lat: number; lng: number; completed: boolean }[] }) {
+  return (
+    <>
+      {items.map((item) => (
+        <CircleMarker
+          key={item.id}
+          center={[item.lat, item.lng]}
+          radius={4}
+          interactive={false}
+          pathOptions={{ color: '#ffffff', weight: 1, fillColor: item.completed ? REFERENCE_DONE : REFERENCE_TODO, fillOpacity: 1 }}
+        />
+      ))}
+    </>
+  );
+}
+
+function ReferenceTrailLayer({ items }: { items: { id: number; name: string; path: [number, number][]; completed: boolean }[] }) {
+  return (
+    <>
+      {items.map((item) =>
+        item.path.length > 0 ? (
+          <Polyline
+            key={item.id}
+            positions={item.path.map(([lng, lat]) => [lat, lng] as [number, number])}
+            interactive={false}
+            pathOptions={{ color: item.completed ? REFERENCE_DONE : REFERENCE_TODO, weight: 2, opacity: item.completed ? 0.9 : 0.5 }}
+          />
+        ) : null
+      )}
+    </>
+  );
+}
 
 // 選中路線變更時，讓地圖平移縮放到該路線範圍。
 // 吃 slug + bbox 而不是整個 trail 物件：動態模式下 bbox 來自清單點擊當下就有的資料
@@ -252,7 +295,7 @@ function useActiveHikeDetail(activeSlug: string | null, isDynamic: boolean) {
   return isDynamic && activeSlug && String(detail?.id) === activeSlug ? detail : null;
 }
 
-export default function TrailsLayer({ trails, userId, category, resizeKey, initialViewport }: Props) {
+export default function TrailsLayer({ trails, userId, category, resizeKey, initialViewport, referenceLayers, visibleLayers }: Props) {
   const hoverSlug = useMapStore((state) => state.hoverSlug);
   const activeSlug = useMapStore((state) => state.activeSlug);
   const activeBbox = useMapStore((state) => state.activeBbox);
@@ -321,6 +364,11 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
       <PanToActiveEffect slug={activeSlug} bbox={(isDynamic ? activeBbox : null) ?? activeTrail?.bbox ?? null} fallbackPath={activeTrail?.path ?? []} />
       <ViewportSync trails={trails} userId={userId} category={category} />
       {isDynamic && <ViewportUrlSync />}
+
+      {/* 疊圖先畫，自己的軌跡才會蓋在它上層——名單是背景參考，不該遮住主角 */}
+      {referenceLayers && visibleLayers?.hundredTrail && <ReferenceTrailLayer items={referenceLayers.hundredTrail} />}
+      {referenceLayers && visibleLayers?.hundred && <ReferenceMountainLayer items={referenceLayers.hundred} />}
+      {referenceLayers && visibleLayers?.smallHundred && <ReferenceMountainLayer items={referenceLayers.smallHundred} />}
 
       {activeTrail && activeTrailPopupPosition && <ActiveTrailPopup key={activeTrail.slug} trail={activeTrail} position={activeTrailPopupPosition} />}
 
