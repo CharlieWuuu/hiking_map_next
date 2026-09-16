@@ -12,7 +12,8 @@ type Props = {
 
 const FALLBACK_WIDTH = 400;
 const HEIGHT = 160;
-const MARGIN = { top: 14, right: 0, bottom: 20, left: 0 };
+// top 要容納 y 軸最高刻度，再加上它上方那行單位文字，否則兩者會重疊
+const MARGIN = { top: 28, right: 0, bottom: 20, left: 0 };
 
 export default function ChartLine({ data, emptyLabel, unit }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -139,13 +140,16 @@ export default function ChartLine({ data, emptyLabel, unit }: Props) {
       .style('font-size', '14px');
 
     if (unit) {
-      // 跟 y 軸最上面那個刻度同一條水平線、垂直置中對齊；
-      // x 用文字實際寬度算出置中位置，而不是憑感覺調偏移量
+      // 放在 y 軸最高刻度的「上方」而不是同一條水平線上——兩者都是 13~14px
+      // 的文字，同一條線會直接疊在一起。往上一個行高，並夾在 viewBox 內
+      // （y 軸頂端是 MARGIN.top，只有這麼多空間），才不會被畫布上緣切掉。
+      // x 以文字實際寬度算出置中位置，跟刻度數字用同一套對齊邏輯
       const [, axisTop] = y.range();
+      const UNIT_LINE_HEIGHT = 15;
       const unitText = svg
         .append('text')
         .text(unit)
-        .attr('y', axisTop - 4)
+        .attr('y', Math.max(UNIT_LINE_HEIGHT / 2, axisTop - UNIT_LINE_HEIGHT))
         .attr('dy', '0.32em')
         .attr('text-anchor', 'middle')
         .attr('fill', 'var(--color-background-contrary)')
