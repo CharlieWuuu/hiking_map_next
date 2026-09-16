@@ -100,7 +100,17 @@ export default function CategoryList({ items }: { items: CategoryItem[] }) {
             return (
               <div key={item.id} ref={isSelected ? selectedRef : undefined} className="contents">
                 {item.href ? (
-                  <Link href={item.href} className={className}>
+                  // 第一次點只選取，讓地圖先飛過去看位置；已經選中的再點一次才進詳細頁。
+                  // 直接連出去的話，使用者根本來不及在地圖上看到這條路線在哪
+                  <Link
+                    href={item.href}
+                    className={className}
+                    onClick={(event) => {
+                      if (isSelected) return;
+                      event.preventDefault();
+                      setSelectedId(item.id);
+                    }}
+                  >
                     {content}
                   </Link>
                 ) : (
