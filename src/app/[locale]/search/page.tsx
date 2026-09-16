@@ -50,7 +50,7 @@ export default async function SearchPage({ searchParams }: Props) {
               {TRAIL_CATEGORIES.map((item) => (
                 <Link
                   key={item}
-                  href={{ pathname: '/data', query: { category: item } }}
+                  href={{ pathname: '/search', query: { category: item } }}
                   className="bg-panel hover:bg-panel-active text-background-contrary rounded-panel flex h-24 items-center justify-center px-4 text-center text-lg font-bold transition-colors"
                 >
                   {t(item)}
