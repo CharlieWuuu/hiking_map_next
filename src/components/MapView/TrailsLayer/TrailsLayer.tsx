@@ -6,7 +6,7 @@ import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import L from 'leaflet';
 import { useTranslations } from 'next-intl';
 import { createContext, Fragment, memo, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { CircleMarker, Polyline, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { CircleMarker, Polygon, Polyline, Popup, useMap, useMapEvents } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 
 import type { Hike } from '../../../lib/db/hikes';
@@ -77,22 +77,58 @@ const DIM_COLOR: Record<MarkerKind, string> = {
 
 const layerColor = (kind: MarkerKind, completed: boolean) => (completed ? LAYER_BASE_COLOR[kind] : DIM_COLOR[kind]);
 
-function ReferenceMountainLayer({ items, kind }: { items: { id: number; name: string; lat: number; lng: number; completed: boolean }[]; kind: MarkerKind }) {
+// 山頭在畫線層用三角形（山的形狀），跟路線的線條區分得開；
+// 在 cluster 層仍用圓點，因為那裡要交給 MarkerClusterGroup 聚合，
+// 形狀差異在那個尺度也看不出來
+function trianglePoints(lat: number, lng: number, sizeDeg: number): [number, number][] {
+  // 等腰三角形，尖端朝上。經度方向依緯度修正，否則高緯度會被壓扁
+  const lngScale = 1 / Math.max(Math.cos((lat * Math.PI) / 180), 0.1);
+  return [
+    [lat + sizeDeg, lng],
+    [lat - sizeDeg * 0.7, lng - sizeDeg * lngScale],
+    [lat - sizeDeg * 0.7, lng + sizeDeg * lngScale],
+  ];
+}
+
+function ReferenceMountainLayer({
+  items,
+  kind,
+  shape = 'circle',
+}: {
+  items: { id: number; name: string; lat: number; lng: number; completed: boolean }[];
+  kind: MarkerKind;
+  shape?: 'circle' | 'triangle';
+}) {
   const pane = useContext(LayerPaneContext);
+  const zoom = useMapStore((state) => state.zoom);
+  // 三角形用經緯度畫，尺寸得隨 zoom 反比縮放才會在螢幕上看起來一樣大。
+  // 基準：zoom 14 時約 9 個像素高
+  const sizeDeg = 0.00055 * Math.pow(2, 14 - Math.min(Math.max(zoom, 8), 17));
+
   return (
     <>
-      {items.map((item) => (
-        <CircleMarker
-          key={`${kind}-${item.id}`}
-          center={[item.lat, item.lng]}
-          radius={4}
-          interactive={false}
-          pane={pane}
-          // className 帶著分類，cluster 圖示才數得出這一團的組成
-          className={kind}
-          pathOptions={{ color: '#ffffff', weight: 1, fillColor: layerColor(kind, item.completed), fillOpacity: 1 }}
-        />
-      ))}
+      {items.map((item) =>
+        shape === 'triangle' ? (
+          <Polygon
+            key={`${kind}-${item.id}`}
+            positions={trianglePoints(item.lat, item.lng, sizeDeg)}
+            interactive={false}
+            pane={pane}
+            pathOptions={{ color: '#ffffff', weight: 1.5, fillColor: layerColor(kind, item.completed), fillOpacity: 1 }}
+          />
+        ) : (
+          <CircleMarker
+            key={`${kind}-${item.id}`}
+            center={[item.lat, item.lng]}
+            radius={4}
+            interactive={false}
+            pane={pane}
+            // className 帶著分類，cluster 圖示才數得出這一團的組成
+            className={kind}
+            pathOptions={{ color: '#ffffff', weight: 1, fillColor: layerColor(kind, item.completed), fillOpacity: 1 }}
+          />
+        )
+      )}
     </>
   );
 }
@@ -485,13 +521,13 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
       {!showClusterOnly && referenceLayers && visibleLayers?.hundred && (
         <LayerPane name="layer-hundred" zIndex={paneZ('hundred')} opacity={opacityOf('hundred')}>
           <ReferenceTrailLayer items={referenceLayers.hundredLines} kind="hundred" />
-          <ReferenceMountainLayer items={referenceLayers.hundred} kind="hundred" />
+          <ReferenceMountainLayer items={referenceLayers.hundred} kind="hundred" shape="triangle" />
         </LayerPane>
       )}
       {!showClusterOnly && referenceLayers && visibleLayers?.smallHundred && (
         <LayerPane name="layer-smallHundred" zIndex={paneZ('smallHundred')} opacity={opacityOf('smallHundred')}>
           <ReferenceTrailLayer items={referenceLayers.smallHundredLines} kind="smallHundred" />
-          <ReferenceMountainLayer items={referenceLayers.smallHundred} kind="smallHundred" />
+          <ReferenceMountainLayer items={referenceLayers.smallHundred} kind="smallHundred" shape="triangle" />
         </LayerPane>
       )}
 
