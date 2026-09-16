@@ -6,11 +6,13 @@ import { useEffect, useRef } from 'react';
 type Props = {
   label: string;
   value: number;
+  /** 分母。各分類實際數量不同（百岳 101、小百岳 106、百大必訪步道 90），不是一律 100 */
+  total: number;
   size?: number;
   strokeWidth?: number;
 };
 
-export default function ChartRing({ label, value, size = 120, strokeWidth = 10 }: Props) {
+export default function ChartRing({ label, value, total, size = 120, strokeWidth = 10 }: Props) {
   const ref = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export default function ChartRing({ label, value, size = 120, strokeWidth = 10 }
     arc
       .transition()
       .duration(1000)
-      .attr('stroke-dashoffset', circumference * (1 - Math.min(value / 100, 1)));
+      .attr('stroke-dashoffset', circumference * (1 - Math.min(value / total, 1)));
 
     // 文字用卡片自己的 contrast 色（而不是 accent 或 background-contrary），
     // 這個元件會被放進不同底色的卡片（例如純黑的 highlight 卡），套用畫面通用的顏色會沒對比度看不到
@@ -55,13 +57,13 @@ export default function ChartRing({ label, value, size = 120, strokeWidth = 10 }
 
     group
       .append('text')
-      .text('／100')
+      .text(`／${total}`)
       .attr('text-anchor', 'middle')
       .attr('dy', size * 0.16)
       .attr('font-size', size * 0.09)
       .attr('fill', 'currentColor')
       .attr('opacity', 0.6);
-  }, [value, size, strokeWidth]);
+  }, [value, total, size, strokeWidth]);
 
   return (
     <div className="flex flex-col items-center gap-2">

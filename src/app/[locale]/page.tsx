@@ -77,9 +77,9 @@ export default async function Home() {
 
       {currentUser && stats && (
         <div className="flex flex-wrap justify-around gap-4">
-          <ChartRing label={tProfile('achievementHundred')} value={stats.achievements.hundred} />
-          <ChartRing label={tProfile('achievementSmallHundred')} value={stats.achievements.smallHundred} />
-          <ChartRing label={tProfile('achievementHundredTrail')} value={stats.achievements.hundredTrail} />
+          <ChartRing label={tProfile('achievementHundred')} value={stats.achievements.hundred} total={stats.achievementTotals.hundred} />
+          <ChartRing label={tProfile('achievementSmallHundred')} value={stats.achievements.smallHundred} total={stats.achievementTotals.smallHundred} />
+          <ChartRing label={tProfile('achievementHundredTrail')} value={stats.achievements.hundredTrail} total={stats.achievementTotals.hundredTrail} />
         </div>
       )}
 

@@ -3,19 +3,15 @@ import { redirect } from 'next/navigation';
 
 import ChartRing from '../../../components/ChartRing';
 import HikeStatsCharts from '../../../components/HikeStatsCharts';
-import MountainProgress from '../../../components/MountainProgress';
 import PageLayout from '../../../components/PageLayout';
-import { findAllHikes, getHikeStats, getMountainProgress } from '../../../lib/db/hikes';
+import { findAllHikes, getHikeStats } from '../../../lib/db/hikes';
 import { getCurrentUser } from '../../../lib/getCurrentUser';
 
 export default async function ChartPage() {
   const currentUser = await getCurrentUser();
   if (!currentUser) redirect('/login');
 
-  const [stats, mountainProgress] = await Promise.all([
-    getHikeStats(Number(currentUser.userId)).catch(() => null),
-    getMountainProgress(Number(currentUser.userId)).catch(() => null),
-  ]);
+  const stats = await getHikeStats(Number(currentUser.userId)).catch(() => null);
   if (!stats) redirect('/login');
 
   const hikes = await findAllHikes(Number(currentUser.userId));
@@ -37,13 +33,11 @@ export default async function ChartPage() {
             </div>
           </div>
           <div className="bg-highlight text-highlight-contrast rounded-panel flex flex-wrap items-center justify-around gap-4 p-6">
-            <ChartRing label={t('achievementHundred')} value={stats.achievements.hundred} />
-            <ChartRing label={t('achievementSmallHundred')} value={stats.achievements.smallHundred} />
-            <ChartRing label={t('achievementHundredTrail')} value={stats.achievements.hundredTrail} />
+            <ChartRing label={t('achievementHundred')} value={stats.achievements.hundred} total={stats.achievementTotals.hundred} />
+            <ChartRing label={t('achievementSmallHundred')} value={stats.achievements.smallHundred} total={stats.achievementTotals.smallHundred} />
+            <ChartRing label={t('achievementHundredTrail')} value={stats.achievements.hundredTrail} total={stats.achievementTotals.hundredTrail} />
           </div>
         </div>
-
-        {mountainProgress && <MountainProgress progress={mountainProgress} />}
 
         {/* 圖表：兩兩一排 */}
         <HikeStatsCharts stats={stats} hikes={hikes} />
