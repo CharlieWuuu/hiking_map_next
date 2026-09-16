@@ -111,7 +111,7 @@ export default function LayerSwitcher({ activeKey, onActiveKeyChange, styleOverr
                 <img
                   src={setting.previewSrc}
                   alt={setting.labelZh}
-                  className={`h-12 w-12 rounded-md object-cover ${activeKey === key ? 'ring-2 ring-offset-1' : 'opacity-60'}`}
+                  className={`aspect-square w-full rounded-md object-cover ${activeKey === key ? 'ring-2 ring-offset-1' : 'opacity-60'}`}
                 />
                 <span>{setting.labelZh}</span>
               </label>

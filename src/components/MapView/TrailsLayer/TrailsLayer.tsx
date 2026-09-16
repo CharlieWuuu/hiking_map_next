@@ -254,9 +254,10 @@ function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMa
       display: flex;
       align-items: center;
       justify-content: center;
-      /* 黑字而非白字：四個分類色對黑字的對比度都在 5.5 以上（淺藍甚至 12.8），
-         對白字卻只有 1.65～3.8。用對的文字顏色就夠清楚，不需要靠陰影硬撐 */
-      color: #1a1a1a;
+      /* 白字配一層淡灰陰影：純白在淺藍上對比只有 1.65，靠一點暗影把字
+         從底色拉開。陰影刻意放輕（灰、低不透明度、不偏移），濃黑會糊掉 */
+      color: #ffffff;
+      text-shadow: 0 0 4px rgba(60, 60, 60, 0.75);
       font-weight: bold;
       font-size: ${count < 100 ? 13 : 12}px;
     ">${count}</div>`,
@@ -451,8 +452,9 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
         </MarkerClusterGroup>
       ) : (
         <>
-          {referenceLayers && visibleLayers?.hundred && <ReferenceMountainLayer items={referenceLayers.hundred} kind="hundred" />}
-          {referenceLayers && visibleLayers?.smallHundred && <ReferenceMountainLayer items={referenceLayers.smallHundred} kind="smallHundred" />}
+          {/* 到了畫線這一層就不再畫名單的點位：這裡的主角是軌跡，
+              散在線上的小圓點只會干擾判讀。名單的分布在遠 zoom 的
+              cluster 圓餅上已經看得到，近看時讓位給線 */}
           {lineTrails.map((trail) => {
             // 完整軌跡還沒到就先畫簡化線，載好再換掉，中間不要出現空白
             const path = tracks.get(trail.slug)?.path ?? trail.path;
