@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 
 import PageLayout from '../../../../components/PageLayout';
 import { findMountainsByCategory } from '../../../../lib/db/mountains';
-import { filterTrails } from '../../../../lib/db/search';
+import { findTrailsByCategory } from '../../../../lib/db/search';
 import { getCurrentUser } from '../../../../lib/getCurrentUser';
 import { TRAIL_CATEGORIES, type TrailCategory } from '../../../../testing/mocks/trails/trails.data';
 import CategoryList from './_components/CategoryList';
@@ -35,15 +35,16 @@ export default async function CategoryPage({ params }: Props) {
     );
   }
 
-  // 百大必訪步道：沿用既有的步道查詢
-  const trails = await filterTrails(category, null);
+  // 百大必訪步道是路線層級的名單，列步道；一樣帶完成狀態
+  const trails = await findTrailsByCategory(category, userId);
   return (
     <PageLayout title={t(category)}>
       <CategoryList
         items={trails.map((trail) => ({
           id: trail.slug,
-          name: trail.displayName,
-          county: trail.county ?? null,
+          name: trail.name,
+          county: trail.county,
+          completed: trail.completed,
           href: `/trails/${trail.slug}`,
         }))}
       />

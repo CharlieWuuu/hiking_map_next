@@ -199,3 +199,45 @@ export async function logQuery(query: string): Promise<void> {
   if (!q) return;
   await sql`INSERT INTO search_queries (query) VALUES (${q})`;
 }
+
+export type TrailInCategory = {
+  slug: string;
+  name: string;
+  county: string | null;
+  /** 這位使用者是否走過（hikes.trail_id 指向它）；未登入時一律 false */
+  completed: boolean;
+};
+
+/**
+ * 某個分類的完整步道名單，附上這位使用者的完成狀態。
+ *
+ * 跟 filterTrails 的差別是多了 completed——瀏覽名單時要看得出
+ * 「哪幾條走過、哪幾條還沒」，而不只是列出全部。
+ */
+export async function findTrailsByCategory(categoryKey: string, userId: number | null): Promise<TrailInCategory[]> {
+  const categoryName = categoryKey ? CATEGORY_KEY_TO_NAME[categoryKey] : null;
+  if (!categoryName) return [];
+
+  const rows = await sql`
+    SELECT
+      t.slug,
+      t.name,
+      t.county,
+      ${userId}::int IS NOT NULL
+        AND EXISTS (
+          SELECT 1 FROM hikes h WHERE h.trail_id = t.id AND h.user_id = ${userId}
+        ) AS completed
+    FROM trails t
+    JOIN trail_category_map tcm ON tcm.trail_id = t.id
+    JOIN categories c ON c.id = tcm.category_id
+    WHERE c.name = ${categoryName}
+    ORDER BY t.name
+  `;
+
+  return rows.map((row) => ({
+    slug: row.slug as string,
+    name: row.name as string,
+    county: (row.county as string) ?? null,
+    completed: Boolean(row.completed),
+  }));
+}
