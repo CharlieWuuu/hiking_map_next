@@ -202,7 +202,7 @@ const CLUSTER_COLOR = '#A67C00';
 // 只用一個 MarkerClusterGroup（而不是每類一個）：多個 group 各自聚合時，
 // leaflet.markercluster 不做跨 group 的碰撞偵測（它的 spiderfy／maxClusterRadius
 // 都只在單一 group 內作用），地理位置相近的圓圈就會直接疊在一起。
-// 單一 group 則結構上不可能重疊，組成改用圓環的分段來表達，資訊也沒有損失
+// 單一 group 則結構上不可能重疊，組成改用圓餅的扇形來表達，資訊也沒有損失
 export type MarkerKind = 'hike' | 'hundred' | 'smallHundred' | 'hundredTrail';
 
 const KIND_COLOR: Record<MarkerKind, string> = {
@@ -214,9 +214,9 @@ const KIND_COLOR: Record<MarkerKind, string> = {
 
 const KIND_ORDER: MarkerKind[] = ['hike', 'hundred', 'smallHundred', 'hundredTrail'];
 
-// 把各類數量畫成一圈分段圓環（conic-gradient），中間放總數。
-// 一眼看得出這一團以哪一類為主，不必拆成多個圓圈
-function buildRingBackground(counts: Record<MarkerKind, number>, total: number): string {
+// 把各類數量畫成實心圓餅（conic-gradient）。單一分類時是純色圓，
+// 混合時才出現扇形分割——一眼看得出這一團以哪一類為主，不必拆成多個圓圈
+function buildPieBackground(counts: Record<MarkerKind, number>, total: number): string {
   const stops: string[] = [];
   let acc = 0;
   for (const kind of KIND_ORDER) {
@@ -242,9 +242,7 @@ function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMa
     else counts.hike += 1;
   }
   const total = KIND_ORDER.reduce((sum, k) => sum + counts[k], 0) || count;
-  const background = buildRingBackground(counts, total);
-  // 環的厚度固定，中心挖空放數字
-  const hole = Math.round(size * 0.62);
+  const background = buildPieBackground(counts, total);
 
   return L.divIcon({
     html: `<div style="
@@ -256,18 +254,13 @@ function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMa
       display: flex;
       align-items: center;
       justify-content: center;
-    "><div style="
-      width: ${hole}px;
-      height: ${hole}px;
-      border-radius: 9999px;
-      background: #2b2b2b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       color: #ffffff;
       font-weight: bold;
       font-size: ${count < 100 ? 13 : 12}px;
-    ">${count}</div></div>`,
+      /* 實心圓餅上的數字要壓在任何一個扇形顏色上都看得清楚，
+         用深色描邊把字從底下的色塊拉開 */
+      text-shadow: 0 0 3px rgba(0, 0, 0, 0.9), 0 1px 2px rgba(0, 0, 0, 0.8);
+    ">${count}</div>`,
     className: '',
     iconSize: L.point(size, size, true),
   });
