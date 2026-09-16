@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { OverlayKey } from '../../../../components/MapView/LayerSwitcher';
 import TrailsLayer, { type MapTrail } from '../../../../components/MapView/TrailsLayer';
@@ -60,15 +60,20 @@ export default function ProfileTrailExplorer({
   const [referenceLayers, setReferenceLayers] = useState<ReferenceLayers | null>(null);
   const [isLoadingLayers, setIsLoadingLayers] = useState(false);
 
-  const hasAnyLayerOn = visibleLayers.hundred || visibleLayers.smallHundred || visibleLayers.hundredTrail;
+  // 載入由「使用者點開圖層」這個動作觸發，不是在 effect 裡同步 setState——
+  // 那會多跑一輪 render，lint 也擋。isLoadingLayers 兼作 in-flight 旗標，
+  // 連點多個圖層只會發出一次請求
+  const loadedRef = useRef(false);
 
-  useEffect(() => {
-    if (!hasAnyLayerOn || referenceLayers || isLoadingLayers) return;
+  function handleToggleLayer(key: OverlayKey) {
+    setVisibleLayers((prev) => ({ ...prev, [key]: !prev[key] }));
+    if (loadedRef.current) return;
+    loadedRef.current = true;
     setIsLoadingLayers(true);
     void fetchReferenceLayers()
       .then(setReferenceLayers)
       .finally(() => setIsLoadingLayers(false));
-  }, [hasAnyLayerOn, referenceLayers, isLoadingLayers]);
+  }
 
   const layerCounts = referenceLayers
     ? {
@@ -242,7 +247,7 @@ export default function ProfileTrailExplorer({
               visible: visibleLayers,
               counts: layerCounts,
               isLoading: isLoadingLayers,
-              onToggle: (key) => setVisibleLayers((prev) => ({ ...prev, [key]: !prev[key] })),
+              onToggle: handleToggleLayer,
               labels: { hundred: tCategory('hundred'), smallHundred: tCategory('smallHundred'), hundredTrail: tCategory('hundredTrail') },
               loadingLabel: tMapLayer('loading'),
               title: tMapLayer('title'),
