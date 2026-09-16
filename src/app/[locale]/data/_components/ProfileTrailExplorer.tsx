@@ -63,7 +63,7 @@ export default function ProfileTrailExplorer({
     hike: 1,
     hundred: 1,
     smallHundred: 1,
-    hundredTrail: 0.7,
+    hundredTrail: 1,
   });
   const [visibleLayers, setVisibleLayers] = useState<Record<OverlayKey, boolean>>({
     hike: true,

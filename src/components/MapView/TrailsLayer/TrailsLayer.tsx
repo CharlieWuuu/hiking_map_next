@@ -57,8 +57,25 @@ const DEFAULT_ZOOM = 7;
 // 官方名單疊圖。配色刻意讓開：金黃是「我的軌跡」的顏色，名單用冷色系，
 // 疊在一起時一眼分得出哪些是自己走過的。已完成的名單項目加亮，未完成的壓暗。
 // 全部 interactive={false}——疊圖只是背景參考，不該搶走軌跡的點擊與 hover
-const REFERENCE_DONE = '#7FD4FF';
-const REFERENCE_TODO = '#4A6B7C';
+// 圖層身分用「色相」表達（跟面板色塊同一組），完成與否用「明度」表達。
+// 先前是用兩個固定藍色表示完成/未完成，結果面板的紫色在地圖上從來沒出現過——
+// 兩套配色互相打架。現在同一層永遠是同一個色相，面板與地圖對得起來
+const LAYER_BASE_COLOR: Record<MarkerKind, string> = {
+  hike: '#A67C00',
+  hundred: '#7FD4FF',
+  smallHundred: '#4A9FD4',
+  hundredTrail: '#B08CFF',
+};
+
+// 未完成的壓暗，讓已完成的自然跳出來
+const DIM_COLOR: Record<MarkerKind, string> = {
+  hike: '#5C4500',
+  hundred: '#3F6A80',
+  smallHundred: '#2A5670',
+  hundredTrail: '#5B4880',
+};
+
+const layerColor = (kind: MarkerKind, completed: boolean) => (completed ? LAYER_BASE_COLOR[kind] : DIM_COLOR[kind]);
 
 function ReferenceMountainLayer({ items, kind }: { items: { id: number; name: string; lat: number; lng: number; completed: boolean }[]; kind: MarkerKind }) {
   const pane = useContext(LayerPaneContext);
@@ -73,14 +90,14 @@ function ReferenceMountainLayer({ items, kind }: { items: { id: number; name: st
           pane={pane}
           // className 帶著分類，cluster 圖示才數得出這一團的組成
           className={kind}
-          pathOptions={{ color: '#ffffff', weight: 1, fillColor: item.completed ? REFERENCE_DONE : REFERENCE_TODO, fillOpacity: 1 }}
+          pathOptions={{ color: '#ffffff', weight: 1, fillColor: layerColor(kind, item.completed), fillOpacity: 1 }}
         />
       ))}
     </>
   );
 }
 
-function ReferenceTrailLayer({ items }: { items: { id: number; name: string; path: [number, number][]; completed: boolean }[] }) {
+function ReferenceTrailLayer({ items, kind }: { items: { id: number; name: string; path: [number, number][]; completed: boolean }[]; kind: MarkerKind }) {
   const pane = useContext(LayerPaneContext);
   return (
     <>
@@ -92,12 +109,7 @@ function ReferenceTrailLayer({ items }: { items: { id: number; name: string; pat
         return (
           <Fragment key={item.id}>
             <Polyline positions={positions} interactive={false} pane={pane} pathOptions={{ color: '#ffffff', weight: 5, opacity: 0.9 }} />
-            <Polyline
-              positions={positions}
-              interactive={false}
-              pane={pane}
-              pathOptions={{ color: item.completed ? REFERENCE_DONE : REFERENCE_TODO, weight: 2.5, opacity: item.completed ? 1 : 0.75 }}
-            />
+            <Polyline positions={positions} interactive={false} pane={pane} pathOptions={{ color: layerColor(kind, item.completed), weight: 3 }} />
           </Fragment>
         );
       })}
@@ -458,9 +470,22 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
 
       {/* 疊圖的線先畫，自己的軌跡才會蓋在它上層——名單是背景參考，不該遮住主角。
           遠 zoom（showClusterOnly）時不畫線，只讓點併進下面的 cluster */}
+      {/* 畫線層：三個名單各自一個 pane，透明度才能分別調。
+          山頭沒有路線幾何（一座山可以有很多條路上去），所以仍是點，
+          但畫得比遠 zoom 的小一點，讓位給軌跡 */}
       {!showClusterOnly && referenceLayers && visibleLayers?.hundredTrail && (
         <LayerPane name="layer-hundredTrail" zIndex={paneZ('hundredTrail')} opacity={opacityOf('hundredTrail')}>
-          <ReferenceTrailLayer items={referenceLayers.hundredTrail} />
+          <ReferenceTrailLayer items={referenceLayers.hundredTrail} kind="hundredTrail" />
+        </LayerPane>
+      )}
+      {!showClusterOnly && referenceLayers && visibleLayers?.hundred && (
+        <LayerPane name="layer-hundred" zIndex={paneZ('hundred')} opacity={opacityOf('hundred')}>
+          <ReferenceMountainLayer items={referenceLayers.hundred} kind="hundred" />
+        </LayerPane>
+      )}
+      {!showClusterOnly && referenceLayers && visibleLayers?.smallHundred && (
+        <LayerPane name="layer-smallHundred" zIndex={paneZ('smallHundred')} opacity={opacityOf('smallHundred')}>
+          <ReferenceMountainLayer items={referenceLayers.smallHundred} kind="smallHundred" />
         </LayerPane>
       )}
 
