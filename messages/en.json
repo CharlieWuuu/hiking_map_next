@@ -298,7 +298,8 @@
     "mountainsSearchPlaceholder": "Search a peak to add",
     "isPublic": "Make this hike public",
     "submit": "Save hike",
-    "submitting": "Saving…"
+    "submitting": "Saving…",
+    "multipleFiles": "{count} files (merged into one)"
   },
   "CategoryPage": {
     "progress": "Completed {completed} / {total}",

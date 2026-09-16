@@ -298,7 +298,8 @@
     "mountainsSearchPlaceholder": "搜尋山名加入",
     "isPublic": "公開這筆紀錄",
     "submit": "儲存紀錄",
-    "submitting": "儲存中…"
+    "submitting": "儲存中…",
+    "multipleFiles": "{count} 個檔案（合併為一筆）"
   },
   "CategoryPage": {
     "progress": "已完成 {completed} / {total}",

@@ -8,7 +8,7 @@ import TrailLayer from '../../../../../components/MapView/TrailLayer';
 import TrailEditCard, { type EditableTrail } from '../../../../../components/TrailEditCard';
 import { useRouter } from '../../../../../i18n/navigation';
 import { createHikeAction } from '../../../../../lib/db/hikes.actions';
-import { GpxParseError, parseGpx, toFeatureCollection, type ParsedGpx, type TrackPoint } from '../../../../../lib/gpx/parseGpx';
+import { GpxParseError, mergeParsedGpx, parseGpx, toFeatureCollection, type ParsedGpx, type TrackPoint } from '../../../../../lib/gpx/parseGpx';
 
 function getBbox(points: TrackPoint[]): [number, number, number, number] {
   let minLng = Infinity;
@@ -36,14 +36,17 @@ export default function GpxUploadForm() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // 一趟行程可能分成好幾段軌跡（中途關掉再打開、或早上下午各錄一段），
+  // 那是同一次出門，合併成一筆紀錄而不是拆成兩筆
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = [...(e.target.files ?? [])];
+    if (files.length === 0) return;
 
     setError(null);
     try {
-      setParsed(parseGpx(await file.text()));
-      setFileName(file.name);
+      const texts = await Promise.all(files.map((file) => file.text()));
+      setParsed(mergeParsedGpx(texts.map((text) => parseGpx(text))));
+      setFileName(files.length === 1 ? files[0].name : t('multipleFiles', { count: files.length }));
     } catch (caught) {
       setParsed(null);
       setFileName(null);
@@ -64,7 +67,7 @@ export default function GpxUploadForm() {
             <span className="text-sm">{fileName ?? t('choosePrompt')}</span>
             <span className="text-background-contrary/60 text-xs">{t('chooseHint')}</span>
           </button>
-          <input ref={fileInputRef} type="file" accept=".gpx,application/gpx+xml" onChange={handleFileChange} className="hidden" />
+          <input ref={fileInputRef} type="file" accept=".gpx,application/gpx+xml" multiple onChange={handleFileChange} className="hidden" />
           {error && <p className="text-sm text-red-500">{error}</p>}
         </div>
       </div>

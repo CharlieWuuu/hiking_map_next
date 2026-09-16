@@ -145,6 +145,45 @@ export function parseGpx(xml: string): ParsedGpx {
   };
 }
 
+/**
+ * 把多個 GPX 合併成一筆紀錄。
+ *
+ * 一趟行程常常會分成好幾段軌跡（中途關掉再打開、或早上下午各錄一段），
+ * 那本來就是同一次出門，不該拆成兩筆紀錄。
+ *
+ * 各段之間「不」連起來：MultiLineString 保留段與段的斷開，忠實反映實際軌跡。
+ * 距離也因此正確——PostGIS 的 ST_Length 對 MultiLineString 只加總各段長度，
+ * 不會把中間沒有記錄的空隙算進去。
+ *
+ * 段落依時間排序，讓地圖上的先後順序符合實際行程；沒有時間的排在最後。
+ */
+export function mergeParsedGpx(items: ParsedGpx[]): ParsedGpx {
+  if (items.length === 0) throw new GpxParseError('沒有可合併的軌跡');
+  if (items.length === 1) return items[0];
+
+  const sorted = [...items].sort((a, b) => {
+    if (a.date === b.date) return 0;
+    if (a.date === null) return 1;
+    if (b.date === null) return -1;
+    return a.date < b.date ? -1 : 1;
+  });
+
+  const segments = sorted.flatMap((item) => item.segments);
+  // 爬升只有在「每一段都有海拔」時才算得準，缺一段就整筆視為沒有海拔資料，
+  // 免得回報一個偏低的數字讓人以為那是全程爬升
+  const hasAllElevation = sorted.every((item) => item.elevationGainM !== null);
+
+  return {
+    // 名稱交給使用者在表單裡填，這裡取第一段的名字當預設值
+    name: sorted.find((item) => item.name)?.name ?? null,
+    segments,
+    date: sorted.find((item) => item.date)?.date ?? null,
+    distanceKm: sumDistanceKm(segments),
+    elevationGainM: hasAllElevation ? sumElevationGainM(segments) : null,
+    pointCount: segments.reduce((total, segment) => total + segment.length, 0),
+  };
+}
+
 /** 轉成後端 POST /hikes 要的形狀：一個只有單一 feature 的 FeatureCollection */
 export function toFeatureCollection(parsed: ParsedGpx) {
   return {
