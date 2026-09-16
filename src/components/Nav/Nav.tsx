@@ -32,13 +32,22 @@ const collapsedStore = {
 // data 的路徑（/profile/x/data）是 profile 路徑（/profile/x）的子路徑，
 // 兩個 href 對同一個 pathname 都會 startsWith 成功，需要挑「最長匹配」
 // 才能讓同一時間只有一個項目被標成 active。
-function findActiveHref(pathname: string, hrefs: string[]): string | null {
-  if (pathname === '/') return hrefs.includes('/') ? '/' : null;
+//
+// 回傳索引而非 href：未登入時 data／upload／profile 的 href 同樣是 /login，
+// 用 href 比對會讓這三個同時亮起來。索引則天然唯一。
+function findActiveIndex(pathname: string, hrefs: string[]): number {
+  if (pathname === '/') return hrefs.indexOf('/');
 
-  const matches = hrefs.filter((href) => href !== '/' && pathname.startsWith(href));
-  if (matches.length === 0) return null;
+  // 登入頁只是未登入時的轉接站，沒有任何一個導覽項目「是」登入頁。
+  // 不排除的話，那幾個 href 指向 /login 的項目會在登入頁亮起來
+  if (pathname.startsWith('/login')) return -1;
 
-  return matches.reduce((longest, current) => (current.length > longest.length ? current : longest));
+  let activeIndex = -1;
+  for (const [index, href] of hrefs.entries()) {
+    if (href === '/' || !pathname.startsWith(href)) continue;
+    if (activeIndex === -1 || href.length > hrefs[activeIndex].length) activeIndex = index;
+  }
+  return activeIndex;
 }
 
 export default function Nav() {
@@ -47,7 +56,7 @@ export default function Nav() {
   // 只訂閱 username，不然登入狀態任何一個欄位變動都會讓整個 Nav 重畫
   const username = useAuth((state) => state.username);
   const navItems = getNavItems(username);
-  const activeHref = findActiveHref(
+  const activeIndex = findActiveIndex(
     pathname,
     navItems.map((item) => item.href)
   );
@@ -65,11 +74,11 @@ export default function Nav() {
       {/* 窄螢幕：底部導覽列。跟 main 一起放進外層的 flex-col，佔實際版面空間（不是 fixed 浮在最上層），
           這樣 main 才知道底部被佔用多少高度，內容捲到底才不會被這排導覽列蓋住 */}
       <nav className="bg-nav border-nav-border order-2 flex shrink-0 justify-around border-t py-4 lg:hidden">
-        {navItems.map(({ messageKey, href, Icon }) => (
+        {navItems.map(({ messageKey, href, Icon }, index) => (
           <Link
             key={messageKey}
             href={href}
-            className={`flex flex-col items-center gap-1 text-xs ${href === activeHref ? 'text-accent' : 'text-background-contrary'}`}
+            className={`flex flex-col items-center gap-1 text-xs ${index === activeIndex ? 'text-accent' : 'text-background-contrary'}`}
           >
             <Icon className="h-6 w-6" />
             {t(messageKey)}
@@ -87,14 +96,14 @@ export default function Nav() {
           {isCollapsed ? <LogoMark className="h-7 w-7" /> : <Logo className="h-auto w-full" />}
         </Link>
         <div className="flex flex-col gap-1">
-          {navItems.map(({ messageKey, href, Icon }) => (
+          {navItems.map(({ messageKey, href, Icon }, index) => (
             <Link
               key={messageKey}
               href={href}
               title={isCollapsed ? t(messageKey) : undefined}
               className={`hover:bg-panel-active-lighten/50 rounded-panel flex items-center gap-2 py-2 text-sm transition-colors duration-150 ${
                 isCollapsed ? 'justify-center px-0' : 'px-3'
-              } ${href === activeHref ? 'text-accent' : 'text-background-contrary'}`}
+              } ${index === activeIndex ? 'text-accent' : 'text-background-contrary'}`}
             >
               <Icon className="h-4.5 w-4.5 shrink-0" />
               {!isCollapsed && t(messageKey)}
