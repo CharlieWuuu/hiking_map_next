@@ -9,7 +9,7 @@ import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 
 import { useIsResizing } from '../../hooks/useIsResizing';
 import { BASE_MAPS, DEFAULT_BASE_MAP, type BaseMapKey } from './baseMaps';
-import LayerSwitcher from './LayerSwitcher';
+import LayerSwitcher, { type OverlayControl } from './LayerSwitcher';
 import ZoomButtons from './ZoomButtons';
 
 type Props = {
@@ -24,6 +24,8 @@ type Props = {
   // 外部容器尺寸有明確切換時（例如全螢幕/縮回）傳入變化的值，
   // 強制重新量測地圖尺寸，不完全依賴 ResizeObserver
   resizeKey?: unknown;
+  // 官方名單疊圖的開關，交給圖層面板一起顯示
+  overlays?: OverlayControl;
 };
 
 // 讓底圖依目前選擇的圖層套用透明度/飽和度，襯托上層的路線描邊或標點
@@ -81,7 +83,7 @@ function FullscreenToggleEffect({ toggleKey }: { toggleKey: unknown }) {
   return null;
 }
 
-export default function MapView({ center, zoom, showZoomControl = true, showLayerSwitcher = true, className, children, resizeKey }: Props) {
+export default function MapView({ center, zoom, showZoomControl = true, showLayerSwitcher = true, className, children, resizeKey, overlays }: Props) {
   const [activeKey, setActiveKey] = useState<BaseMapKey>(DEFAULT_BASE_MAP);
   const [styleOverrides, setStyleOverrides] = useState(
     Object.fromEntries(Object.entries(BASE_MAPS).map(([key, setting]) => [key, { opacity: setting.opacity, saturate: setting.saturate }])) as Record<
@@ -113,6 +115,7 @@ export default function MapView({ center, zoom, showZoomControl = true, showLaye
             onActiveKeyChange={setActiveKey}
             styleOverrides={styleOverrides}
             onStyleOverrideChange={(key, patch) => setStyleOverrides((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }))}
+            overlays={overlays}
           />
         )}
 

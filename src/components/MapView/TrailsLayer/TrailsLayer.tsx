@@ -13,6 +13,7 @@ import type { Hike } from '../../../lib/db/hikes';
 import { fetchHikeDetail } from '../../../lib/db/hikes.query.actions';
 import type { ReferenceLayers } from '../../../lib/db/referenceLayers';
 import { CLUSTER_ZOOM, DETAIL_ZOOM, useMapStore, type LngLat } from '../../../lib/mapStore';
+import type { OverlayControl } from '../LayerSwitcher';
 import MapView from '../MapView';
 
 export type MapTrail = {
@@ -44,6 +45,8 @@ type Props = {
   // 疊在自己軌跡之上的官方名單圖層；沒開的圖層不會傳進來
   referenceLayers?: ReferenceLayers | null;
   visibleLayers?: { hundred: boolean; smallHundred: boolean; hundredTrail: boolean };
+  // 疊圖開關交給地圖自己的圖層面板顯示，不另外浮一塊在地圖上
+  overlays?: OverlayControl;
 };
 
 const DEFAULT_CENTER: [number, number] = [23.7, 120.9];
@@ -349,7 +352,7 @@ function useActiveHikeDetail(activeSlug: string | null, isDynamic: boolean) {
   return isDynamic && activeSlug && String(detail?.id) === activeSlug ? detail : null;
 }
 
-export default function TrailsLayer({ trails, userId, category, resizeKey, initialViewport, referenceLayers, visibleLayers }: Props) {
+export default function TrailsLayer({ trails, userId, category, resizeKey, initialViewport, referenceLayers, visibleLayers, overlays }: Props) {
   const hoverSlug = useMapStore((state) => state.hoverSlug);
   const activeSlug = useMapStore((state) => state.activeSlug);
   const activeBbox = useMapStore((state) => state.activeBbox);
@@ -414,6 +417,7 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
       zoom={initialViewport?.zoom ?? DEFAULT_ZOOM}
       className="rounded-panel h-full w-full overflow-hidden"
       resizeKey={resizeKey}
+      overlays={overlays}
     >
       <PanToActiveEffect slug={activeSlug} bbox={(isDynamic ? activeBbox : null) ?? activeTrail?.bbox ?? null} fallbackPath={activeTrail?.path ?? []} />
       <ViewportSync trails={trails} userId={userId} category={category} />

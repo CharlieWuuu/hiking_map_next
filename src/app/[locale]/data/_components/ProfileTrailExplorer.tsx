@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
+import type { OverlayKey } from '../../../../components/MapView/LayerSwitcher';
 import TrailsLayer, { type MapTrail } from '../../../../components/MapView/TrailsLayer';
 import type { EditableTrail } from '../../../../components/TrailEditCard';
 import { deleteHikeAction, updateHikeAction } from '../../../../lib/db/hikes.actions';
@@ -12,7 +13,6 @@ import type { ReferenceLayers } from '../../../../lib/db/referenceLayers';
 import { useMapStore } from '../../../../lib/mapStore';
 import { PAGE_SIZE } from '../constants';
 import ExpandToggleButton from './ExpandToggleButton';
-import MapLayerToggle, { type LayerKey } from './MapLayerToggle';
 import TrailExplorerList from './TrailExplorerList';
 import TrailExplorerToolbar from './TrailExplorerToolbar';
 import TrailListPagination from './TrailListPagination';
@@ -56,7 +56,7 @@ export default function ProfileTrailExplorer({
 }: Props) {
   // 官方名單疊圖：資料量不小（百大必訪的簡化幾何合計約 435KB），
   // 所以不隨頁面一起送，等使用者第一次打開任一圖層才去要，之後快取在 state 裡
-  const [visibleLayers, setVisibleLayers] = useState<Record<LayerKey, boolean>>({ hundred: false, smallHundred: false, hundredTrail: false });
+  const [visibleLayers, setVisibleLayers] = useState<Record<OverlayKey, boolean>>({ hundred: false, smallHundred: false, hundredTrail: false });
   const [referenceLayers, setReferenceLayers] = useState<ReferenceLayers | null>(null);
   const [isLoadingLayers, setIsLoadingLayers] = useState(false);
 
@@ -79,6 +79,8 @@ export default function ProfileTrailExplorer({
     : null;
 
   const t = useTranslations('ProfileDataPage');
+  const tCategory = useTranslations('SearchPage');
+  const tMapLayer = useTranslations('MapLayerToggle');
   const [trails, setTrails] = useState(initialTrails);
   // hover/選取狀態放在 map store，清單與地圖不必再靠 props 互相轉發
   const activeSlug = useMapStore((state) => state.activeSlug);
@@ -229,14 +231,6 @@ export default function ProfileTrailExplorer({
               label={isMapFullscreen ? t('collapse') : t('expand')}
             />
           </div>
-          <div className="absolute bottom-2 left-2 z-1000">
-            <MapLayerToggle
-              visible={visibleLayers}
-              counts={layerCounts}
-              isLoading={isLoadingLayers}
-              onToggle={(key) => setVisibleLayers((prev) => ({ ...prev, [key]: !prev[key] }))}
-            />
-          </div>
           <TrailsLayer
             userId={userId}
             category={category}
@@ -244,6 +238,15 @@ export default function ProfileTrailExplorer({
             initialViewport={initialViewport ?? undefined}
             referenceLayers={referenceLayers}
             visibleLayers={visibleLayers}
+            overlays={{
+              visible: visibleLayers,
+              counts: layerCounts,
+              isLoading: isLoadingLayers,
+              onToggle: (key) => setVisibleLayers((prev) => ({ ...prev, [key]: !prev[key] })),
+              labels: { hundred: tCategory('hundred'), smallHundred: tCategory('smallHundred'), hundredTrail: tCategory('hundredTrail') },
+              loadingLabel: tMapLayer('loading'),
+              title: tMapLayer('title'),
+            }}
           />
         </div>
       )}
