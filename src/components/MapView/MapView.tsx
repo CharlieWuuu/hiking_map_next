@@ -97,7 +97,10 @@ export default function MapView({ center, zoom, showZoomControl = true, showLaye
 
   return (
     <div ref={mapWrapperRef} className={className ?? 'rounded-panel h-125 w-full overflow-hidden'}>
-      <MapContainer center={center} zoom={zoom} scrollWheelZoom className="h-full w-full" zoomControl={false}>
+      {/* preferCanvas：CircleMarker／Polyline 改走 Canvas 而非每個一個 SVG 節點。
+          實測 4 倍 CPU 節流下，SVG 到 3000 個標記平移就掉到 30fps、6000 個剩 8fps，
+          Canvas 在 6000 個仍是滿幀且一幀不掉。程式碼不用改，只換渲染器 */}
+      <MapContainer center={center} zoom={zoom} scrollWheelZoom preferCanvas className="h-full w-full" zoomControl={false}>
         <TileEffect opacity={activeSetting.opacity} saturate={activeSetting.saturate} />
         <TileLayer url={BASE_MAPS[activeKey].url} />
         {showZoomControl && <ZoomButtons />}

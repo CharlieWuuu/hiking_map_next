@@ -55,15 +55,17 @@ const DEFAULT_ZOOM = 7;
 const REFERENCE_DONE = '#7FD4FF';
 const REFERENCE_TODO = '#4A6B7C';
 
-function ReferenceMountainLayer({ items }: { items: { id: number; name: string; lat: number; lng: number; completed: boolean }[] }) {
+function ReferenceMountainLayer({ items, kind }: { items: { id: number; name: string; lat: number; lng: number; completed: boolean }[]; kind: MarkerKind }) {
   return (
     <>
       {items.map((item) => (
         <CircleMarker
-          key={item.id}
+          key={`${kind}-${item.id}`}
           center={[item.lat, item.lng]}
           radius={4}
           interactive={false}
+          // className 帶著分類，cluster 圖示才數得出這一團的組成
+          className={kind}
           pathOptions={{ color: '#ffffff', weight: 1, fillColor: item.completed ? REFERENCE_DONE : REFERENCE_TODO, fillOpacity: 1 }}
         />
       ))}
@@ -193,24 +195,76 @@ function intersects(bbox: MapTrail['bbox'], view: [number, number, number, numbe
 // cluster 圖示改成跟單一路線點位同一個棕色，圓圈大小依照聚合數量分級，數字置中
 const CLUSTER_COLOR = '#A67C00';
 
-function createClusterIcon(cluster: { getChildCount: () => number }) {
+// 每個標記用 data-kind 標明自己屬於哪一類，cluster 圖示才數得出組成。
+// 只用一個 MarkerClusterGroup（而不是每類一個）：多個 group 各自聚合時，
+// leaflet.markercluster 不做跨 group 的碰撞偵測（它的 spiderfy／maxClusterRadius
+// 都只在單一 group 內作用），地理位置相近的圓圈就會直接疊在一起。
+// 單一 group 則結構上不可能重疊，組成改用圓環的分段來表達，資訊也沒有損失
+export type MarkerKind = 'hike' | 'hundred' | 'smallHundred' | 'hundredTrail';
+
+const KIND_COLOR: Record<MarkerKind, string> = {
+  hike: CLUSTER_COLOR,
+  hundred: '#7FD4FF',
+  smallHundred: '#4A9FD4',
+  hundredTrail: '#B08CFF',
+};
+
+const KIND_ORDER: MarkerKind[] = ['hike', 'hundred', 'smallHundred', 'hundredTrail'];
+
+// 把各類數量畫成一圈分段圓環（conic-gradient），中間放總數。
+// 一眼看得出這一團以哪一類為主，不必拆成多個圓圈
+function buildRingBackground(counts: Record<MarkerKind, number>, total: number): string {
+  const stops: string[] = [];
+  let acc = 0;
+  for (const kind of KIND_ORDER) {
+    const n = counts[kind];
+    if (!n) continue;
+    const from = (acc / total) * 360;
+    acc += n;
+    const to = (acc / total) * 360;
+    stops.push(`${KIND_COLOR[kind]} ${from}deg ${to}deg`);
+  }
+  // 全部同一類時不必畫漸層，純色即可
+  return stops.length === 1 ? KIND_COLOR[KIND_ORDER.find((k) => counts[k])!] : `conic-gradient(${stops.join(', ')})`;
+}
+
+function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMarkers?: () => { options?: { className?: string } }[] }) {
   const count = cluster.getChildCount();
   const size = count < 10 ? 32 : count < 100 ? 40 : 48;
+
+  const counts: Record<MarkerKind, number> = { hike: 0, hundred: 0, smallHundred: 0, hundredTrail: 0 };
+  for (const child of cluster.getAllChildMarkers?.() ?? []) {
+    const kind = (child.options?.className as MarkerKind) || 'hike';
+    if (kind in counts) counts[kind] += 1;
+    else counts.hike += 1;
+  }
+  const total = KIND_ORDER.reduce((sum, k) => sum + counts[k], 0) || count;
+  const background = buildRingBackground(counts, total);
+  // 環的厚度固定，中心挖空放數字
+  const hole = Math.round(size * 0.62);
 
   return L.divIcon({
     html: `<div style="
       width: ${size}px;
       height: ${size}px;
       border-radius: 9999px;
-      background: ${CLUSTER_COLOR};
+      background: ${background};
       border: 2px solid #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    "><div style="
+      width: ${hole}px;
+      height: ${hole}px;
+      border-radius: 9999px;
+      background: #2b2b2b;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #ffffff;
       font-weight: bold;
       font-size: ${count < 100 ? 13 : 12}px;
-    ">${count}</div>`,
+    ">${count}</div></div>`,
     className: '',
     iconSize: L.point(size, size, true),
   });
@@ -365,14 +419,16 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
       <ViewportSync trails={trails} userId={userId} category={category} />
       {isDynamic && <ViewportUrlSync />}
 
-      {/* 疊圖先畫，自己的軌跡才會蓋在它上層——名單是背景參考，不該遮住主角 */}
-      {referenceLayers && visibleLayers?.hundredTrail && <ReferenceTrailLayer items={referenceLayers.hundredTrail} />}
-      {referenceLayers && visibleLayers?.hundred && <ReferenceMountainLayer items={referenceLayers.hundred} />}
-      {referenceLayers && visibleLayers?.smallHundred && <ReferenceMountainLayer items={referenceLayers.smallHundred} />}
+      {/* 疊圖的線先畫，自己的軌跡才會蓋在它上層——名單是背景參考，不該遮住主角。
+          遠 zoom（showClusterOnly）時不畫線，只讓點併進下面的 cluster */}
+      {!showClusterOnly && referenceLayers && visibleLayers?.hundredTrail && <ReferenceTrailLayer items={referenceLayers.hundredTrail} />}
 
       {activeTrail && activeTrailPopupPosition && <ActiveTrailPopup key={activeTrail.slug} trail={activeTrail} position={activeTrailPopupPosition} />}
 
       {showClusterOnly ? (
+        // 自己的紀錄與官方名單共用同一個 cluster group：多個 group 各自聚合時彼此會疊在一起
+        // （套件不做跨 group 碰撞偵測），單一 group 則結構上不可能重疊，
+        // 組成改由圓環分段表達
         <MarkerClusterGroup chunkedLoading iconCreateFunction={createClusterIcon}>
           {markers.map((marker) =>
             marker.center ? (
@@ -380,18 +436,33 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
                 key={marker.id}
                 center={[marker.center[1], marker.center[0]]}
                 radius={6}
+                className="hike"
                 pathOptions={{ color: '#ffffff', weight: 2, fillColor: '#A67C00', fillOpacity: 1 }}
                 eventHandlers={{ click: () => setActiveSlug(activeSlug === String(marker.id) ? null : String(marker.id), marker.bbox) }}
               />
             ) : null
           )}
+          {referenceLayers && visibleLayers?.hundred && <ReferenceMountainLayer items={referenceLayers.hundred} kind="hundred" />}
+          {referenceLayers && visibleLayers?.smallHundred && <ReferenceMountainLayer items={referenceLayers.smallHundred} kind="smallHundred" />}
+          {referenceLayers && visibleLayers?.hundredTrail && (
+            <ReferenceMountainLayer
+              items={referenceLayers.hundredTrail
+                .filter((t) => t.lat != null && t.lng != null)
+                .map((t) => ({ ...t, lat: t.lat as number, lng: t.lng as number }))}
+              kind="hundredTrail"
+            />
+          )}
         </MarkerClusterGroup>
       ) : (
-        lineTrails.map((trail) => {
-          // 完整軌跡還沒到就先畫簡化線，載好再換掉，中間不要出現空白
-          const path = tracks.get(trail.slug)?.path ?? trail.path;
-          return <TrailPolylines key={trail.slug} slug={trail.slug} path={path} isActive={trail.slug === activeSlug} isHover={trail.slug === hoverSlug} />;
-        })
+        <>
+          {referenceLayers && visibleLayers?.hundred && <ReferenceMountainLayer items={referenceLayers.hundred} kind="hundred" />}
+          {referenceLayers && visibleLayers?.smallHundred && <ReferenceMountainLayer items={referenceLayers.smallHundred} kind="smallHundred" />}
+          {lineTrails.map((trail) => {
+            // 完整軌跡還沒到就先畫簡化線，載好再換掉，中間不要出現空白
+            const path = tracks.get(trail.slug)?.path ?? trail.path;
+            return <TrailPolylines key={trail.slug} slug={trail.slug} path={path} isActive={trail.slug === activeSlug} isHover={trail.slug === hoverSlug} />;
+          })}
+        </>
       )}
     </MapView>
   );
