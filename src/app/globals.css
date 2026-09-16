@@ -32,6 +32,17 @@ button:not(:disabled) {
   max-width: none;
 }
 
+/* 地圖類頁面要的是「剛好一屏、內部自己捲」，而不是被內容撐高。
+   main 的 grid row 是 minmax(min-content,1fr)，min-content 會被長清單算成
+   內容的完整高度，底下每層 flex-1 都繼承這個被撐大的值，於是整頁超過一屏：
+   清單的 overflow-y-auto 失去作用、地圖的 h-full 也跟著變超高。
+   對有 .page-wide 的頁面把 row 改成 minmax(0,1fr)，高度就以 main 自身為準；
+   1fr 仍會分配滿剩餘空間，內容不足一頁時照樣撐滿。
+   其他頁面維持 min-content，長內容才能整頁往下捲。 */
+main:has(.page-wide) {
+  grid-template-rows: minmax(0, 1fr);
+}
+
 /* 地圖上選中路線的懸浮卡：拔掉 Leaflet 預設泡泡的白底／陰影／箭頭，改用內層自己的 bg-panel 卡片樣式 */
 .hiking-map-popup .leaflet-popup-content-wrapper {
   background: transparent;
