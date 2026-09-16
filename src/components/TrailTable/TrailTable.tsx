@@ -27,11 +27,11 @@ export default function TrailTable({ trails, activeSlug, onMouseEnter, onMouseLe
     <table className="w-full border-collapse text-sm">
       <thead>
         <tr className="text-background-contrary/60 border-b-panel-active border-b text-left">
-          <th className="w-10 py-2 font-normal">#</th>
-          <th className="py-2 font-normal">{t('name')}</th>
-          <th className="py-2 font-normal">{t('county')}</th>
-          <th className="py-2 font-normal">{t('town')}</th>
-          <th className="py-2 font-normal">{t('date')}</th>
+          <th className="w-14 px-3 py-2 font-normal">#</th>
+          <th className="px-3 py-2 font-normal">{t('name')}</th>
+          <th className="px-3 py-2 font-normal">{t('county')}</th>
+          <th className="px-3 py-2 font-normal">{t('town')}</th>
+          <th className="px-3 py-2 font-normal">{t('date')}</th>
         </tr>
       </thead>
       <tbody>
@@ -45,15 +45,15 @@ export default function TrailTable({ trails, activeSlug, onMouseEnter, onMouseLe
                 onClick={() => onSelect(trail.slug)}
                 className={`hover:bg-panel-active/50 cursor-pointer transition-colors duration-150 ${trail.slug === activeSlug ? 'bg-panel-active' : ''}`}
               >
-                <td className="py-2">{index + 1}</td>
-                <td className="py-2 font-bold">{trail.name}</td>
-                <td className="py-2">{trail.county}</td>
-                <td className="py-2">{trail.town}</td>
-                <td className="py-2">{trail.date}</td>
+                <td className="px-3 py-2">{index + 1}</td>
+                <td className="px-3 py-2 font-bold">{trail.name}</td>
+                <td className="px-3 py-2">{trail.county}</td>
+                <td className="px-3 py-2">{trail.town}</td>
+                <td className="px-3 py-2">{trail.date}</td>
               </tr>
               {editRow && (
                 <tr>
-                  <td colSpan={5} className="py-2">
+                  <td colSpan={5} className="px-3 py-2">
                     {editRow}
                   </td>
                 </tr>

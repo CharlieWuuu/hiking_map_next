@@ -69,7 +69,7 @@ if (localStorage.getItem('${NAV_COLLAPSED_STORAGE_KEY}') === 'true') document.do
                   （flex + flex-1 子元素會讓 Chrome 漏算 padding-bottom，捲到底時內容貼齊視窗底部。）
                   row 用 minmax(min-content,1fr)：內容不足一頁時撐滿高度（地圖頁才能滿版），
                   內容超過時以 min-content 為準讓 main 正常捲動 */}
-              <main className="scrollbar-subtle grid min-h-0 min-w-0 flex-1 grid-rows-[minmax(min-content,1fr)] overflow-y-auto p-4 lg:p-6 lg:pb-12">
+              <main className="scrollbar-subtle grid min-h-0 min-w-0 flex-1 grid-rows-[minmax(min-content,1fr)] overflow-y-auto p-4 lg:p-6">
                 {/* 預設限制閱讀寬度；地圖等需要撐滿版面的頁面用 .page-wide 取消上限。
                     grid item 預設 stretch 會撐滿 row 的高度，min-h-0 讓內部的 flex-1／overflow
                     子元素（例如資料頁的地圖）能收縮到這個高度內，而不是被內容撐開 */}
