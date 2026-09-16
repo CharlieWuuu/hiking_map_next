@@ -50,13 +50,14 @@ export default function MountainMap({ items, selectedId, onSelect }: Props) {
             center={[item.lat, item.lng]}
             // 沿用資料頁地圖的配色：未完成是深金褐 #A67C00、已完成換成亮黃
             // #FFFF3C（資料頁用來標示選取路線的顏色），選中的再放大並改黑框。
-            // 只靠不透明度區分在淺色底圖上看不出來，所以改用色相
+            // 完成與否用色相區分就夠，不靠不透明度——半透明會讓底圖透出來，
+            // 點與點重疊時顏色混在一起反而更難讀
             radius={isSelected ? 9 : 6}
             pathOptions={{
               color: isSelected ? '#000000' : '#ffffff',
               weight: 2,
               fillColor: item.completed ? '#FFFF3C' : '#A67C00',
-              fillOpacity: item.completed ? 1 : 0.55,
+              fillOpacity: 1,
             }}
             eventHandlers={{ click: () => onSelect(item.id) }}
           >
