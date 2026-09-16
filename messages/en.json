@@ -299,5 +299,16 @@
     "isPublic": "Make this hike public",
     "submit": "Save hike",
     "submitting": "Saving…"
+  },
+  "CategoryPage": {
+    "progress": "Completed {completed} / {total}",
+    "completed": "Completed",
+    "notYet": "Not yet",
+    "elevationUnit": "m",
+    "empty": "No data in this category",
+    "backToSearch": "Back to search",
+    "filterAll": "All",
+    "filterCompleted": "Completed",
+    "filterNotYet": "Not yet"
   }
 }

@@ -299,5 +299,16 @@
     "isPublic": "公開這筆紀錄",
     "submit": "儲存紀錄",
     "submitting": "儲存中…"
+  },
+  "CategoryPage": {
+    "progress": "已完成 {completed} / {total}",
+    "completed": "已完成",
+    "notYet": "還沒爬",
+    "elevationUnit": "公尺",
+    "empty": "這個分類目前沒有資料",
+    "backToSearch": "返回探索",
+    "filterAll": "全部",
+    "filterCompleted": "已完成",
+    "filterNotYet": "未完成"
   }
 }
