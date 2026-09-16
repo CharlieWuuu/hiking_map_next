@@ -56,7 +56,15 @@ export default function ProfileTrailExplorer({
 }: Props) {
   // 官方名單疊圖：資料量不小（百大必訪的簡化幾何合計約 435KB），
   // 所以不隨頁面一起送，等使用者第一次打開任一圖層才去要，之後快取在 state 裡
-  const [visibleLayers, setVisibleLayers] = useState<Record<OverlayKey, boolean>>({ hundred: false, smallHundred: false, hundredTrail: false });
+  // 「我的軌跡」也是一個圖層，預設開著；三個官方名單預設關著。
+  // order 由上而下＝地圖上的繪製順序，越上面畫在越上層
+  const [layerOrder, setLayerOrder] = useState<OverlayKey[]>(['hike', 'hundredTrail', 'hundred', 'smallHundred']);
+  const [visibleLayers, setVisibleLayers] = useState<Record<OverlayKey, boolean>>({
+    hike: true,
+    hundred: false,
+    smallHundred: false,
+    hundredTrail: false,
+  });
   const [referenceLayers, setReferenceLayers] = useState<ReferenceLayers | null>(null);
   const [isLoadingLayers, setIsLoadingLayers] = useState(false);
 
@@ -65,9 +73,20 @@ export default function ProfileTrailExplorer({
   // 連點多個圖層只會發出一次請求
   const loadedRef = useRef(false);
 
+  function handleReorderLayer(index: number, direction: -1 | 1) {
+    setLayerOrder((prev) => {
+      const next = [...prev];
+      const target = index + direction;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+
   function handleToggleLayer(key: OverlayKey) {
     setVisibleLayers((prev) => ({ ...prev, [key]: !prev[key] }));
-    if (loadedRef.current) return;
+    // 「我的軌跡」不需要載入官方名單
+    if (key === 'hike' || loadedRef.current) return;
     loadedRef.current = true;
     setIsLoadingLayers(true);
     void fetchReferenceLayers()
@@ -75,13 +94,17 @@ export default function ProfileTrailExplorer({
       .finally(() => setIsLoadingLayers(false));
   }
 
-  const layerCounts = referenceLayers
-    ? {
-        hundred: { completed: referenceLayers.hundred.filter((x) => x.completed).length, total: referenceLayers.hundred.length },
-        smallHundred: { completed: referenceLayers.smallHundred.filter((x) => x.completed).length, total: referenceLayers.smallHundred.length },
-        hundredTrail: { completed: referenceLayers.hundredTrail.filter((x) => x.completed).length, total: referenceLayers.hundredTrail.length },
-      }
-    : null;
+  const layerCounts: Record<OverlayKey, { completed: number; total: number } | null> = {
+    // 自己的紀錄沒有「完成幾／共幾」的概念，只顯示總數
+    hike: { completed: totalCount, total: totalCount },
+    hundred: referenceLayers ? { completed: referenceLayers.hundred.filter((x) => x.completed).length, total: referenceLayers.hundred.length } : null,
+    smallHundred: referenceLayers
+      ? { completed: referenceLayers.smallHundred.filter((x) => x.completed).length, total: referenceLayers.smallHundred.length }
+      : null,
+    hundredTrail: referenceLayers
+      ? { completed: referenceLayers.hundredTrail.filter((x) => x.completed).length, total: referenceLayers.hundredTrail.length }
+      : null,
+  };
 
   const t = useTranslations('ProfileDataPage');
   const tCategory = useTranslations('SearchPage');
@@ -243,12 +266,20 @@ export default function ProfileTrailExplorer({
             initialViewport={initialViewport ?? undefined}
             referenceLayers={referenceLayers}
             visibleLayers={visibleLayers}
+            layerOrder={layerOrder}
             overlays={{
+              order: layerOrder,
               visible: visibleLayers,
               counts: layerCounts,
               isLoading: isLoadingLayers,
               onToggle: handleToggleLayer,
-              labels: { hundred: tCategory('hundred'), smallHundred: tCategory('smallHundred'), hundredTrail: tCategory('hundredTrail') },
+              onReorder: handleReorderLayer,
+              labels: {
+                hike: tMapLayer('myTracks'),
+                hundred: tCategory('hundred'),
+                smallHundred: tCategory('smallHundred'),
+                hundredTrail: tCategory('hundredTrail'),
+              },
               loadingLabel: tMapLayer('loading'),
               title: tMapLayer('title'),
             }}

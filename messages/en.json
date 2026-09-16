@@ -314,6 +314,7 @@
   },
   "MapLayerToggle": {
     "loading": "Loading",
-    "title": "Recommended routes"
+    "title": "Layers",
+    "myTracks": "My tracks"
   }
 }

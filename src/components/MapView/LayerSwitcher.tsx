@@ -1,33 +1,38 @@
 'use client';
 
 import L from 'leaflet';
-import { Layers, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Layers, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { BASE_MAPS, type BaseMapKey } from './baseMaps';
 
-// 官方名單疊圖的開關。底圖與疊圖都是「這張地圖上要顯示什麼」，
-// 放在同一個面板裡，不另外開一顆按鈕佔地圖角落
-export type OverlayKey = 'hundred' | 'smallHundred' | 'hundredTrail';
+// 圖層開關。底圖與圖層都是「這張地圖上要顯示什麼」，
+// 放在同一個面板裡，不另外開一顆按鈕佔地圖角落。
+// 「我的軌跡」也是其中一個圖層，跟三個官方名單平等——
+// 這樣才能關掉自己的軌跡只看名單，順序也才有得調
+export type OverlayKey = 'hike' | 'hundred' | 'smallHundred' | 'hundredTrail';
 
 export type OverlayControl = {
+  // 由上而下的顯示順序，也是地圖上的繪製順序（越上面畫在越上層）
+  order: OverlayKey[];
   visible: Record<OverlayKey, boolean>;
-  counts: Record<OverlayKey, { completed: number; total: number }> | null;
+  counts: Record<OverlayKey, { completed: number; total: number } | null>;
   isLoading: boolean;
   onToggle: (key: OverlayKey) => void;
+  // 把 index 的圖層往 direction 方向移動一格
+  onReorder: (index: number, direction: -1 | 1) => void;
   labels: Record<OverlayKey, string>;
   loadingLabel: string;
   title: string;
 };
 
-// 跟地圖上的疊圖同色系，讓面板裡的色塊對得起地圖上的點
+// 跟地圖上的圖層同色系，讓面板裡的色塊對得起地圖上的點與線
 const OVERLAY_COLOR: Record<OverlayKey, string> = {
+  hike: '#A67C00',
   hundred: '#7FD4FF',
   smallHundred: '#4A9FD4',
   hundredTrail: '#B08CFF',
 };
-
-const OVERLAY_KEYS: OverlayKey[] = ['hundred', 'smallHundred', 'hundredTrail'];
 
 type Props = {
   activeKey: BaseMapKey;
@@ -68,27 +73,45 @@ export default function LayerSwitcher({ activeKey, onActiveKeyChange, styleOverr
             <>
               <p className="mb-2 text-sm font-bold">{overlays.title}</p>
               <div className="mb-4 flex flex-col gap-1">
-                {OVERLAY_KEYS.map((key) => {
-                  const count = overlays.counts?.[key];
+                {overlays.order.map((key, index) => {
+                  const count = overlays.counts[key];
                   return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => overlays.onToggle(key)}
-                      className="hover:bg-panel-active -mx-2 flex items-center gap-2 rounded px-2 py-1 text-left text-xs transition-colors"
-                    >
+                    <div key={key} className="hover:bg-panel-active -mx-2 flex items-center gap-2 rounded px-2 py-1 text-xs transition-colors">
                       {/* 名稱沿用「透明度」那排的樣式：同樣 text-xs、不因開關狀態變淡，
                           開關狀態只靠左側色塊的實心／空心表達 */}
-                      <span
-                        aria-hidden
-                        className="h-3 w-3 shrink-0 rounded-sm border"
-                        style={{ borderColor: OVERLAY_COLOR[key], backgroundColor: overlays.visible[key] ? OVERLAY_COLOR[key] : 'transparent' }}
-                      />
-                      <span className="shrink-0 whitespace-nowrap">{overlays.labels[key]}</span>
-                      <span className="ml-auto w-10 shrink-0 text-right whitespace-nowrap tabular-nums">
-                        {overlays.isLoading ? overlays.loadingLabel : count ? `${count.completed}/${count.total}` : ''}
+                      <button type="button" onClick={() => overlays.onToggle(key)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                        <span
+                          aria-hidden
+                          className="h-3 w-3 shrink-0 rounded-sm border"
+                          style={{ borderColor: OVERLAY_COLOR[key], backgroundColor: overlays.visible[key] ? OVERLAY_COLOR[key] : 'transparent' }}
+                        />
+                        <span className="shrink-0 whitespace-nowrap">{overlays.labels[key]}</span>
+                        <span className="ml-auto shrink-0 whitespace-nowrap tabular-nums">
+                          {overlays.isLoading && key !== 'hike' ? overlays.loadingLabel : count ? `${count.completed}/${count.total}` : ''}
+                        </span>
+                      </button>
+                      {/* 上下箭頭調整繪製順序：越上面的圖層畫在越上層 */}
+                      <span className="flex shrink-0 flex-col">
+                        <button
+                          type="button"
+                          onClick={() => overlays.onReorder(index, -1)}
+                          disabled={index === 0}
+                          className="text-background-contrary/60 hover:text-background-contrary disabled:opacity-20"
+                          aria-label={`${overlays.labels[key]} 上移`}
+                        >
+                          <ChevronUp className="h-3 w-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => overlays.onReorder(index, 1)}
+                          disabled={index === overlays.order.length - 1}
+                          className="text-background-contrary/60 hover:text-background-contrary disabled:opacity-20"
+                          aria-label={`${overlays.labels[key]} 下移`}
+                        >
+                          <ChevronDown className="h-3 w-3" />
+                        </button>
                       </span>
-                    </button>
+                    </div>
                   );
                 })}
               </div>

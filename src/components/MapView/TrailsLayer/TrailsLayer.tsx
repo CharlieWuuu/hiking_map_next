@@ -5,7 +5,7 @@ import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 
 import L from 'leaflet';
 import { useTranslations } from 'next-intl';
-import { Fragment, memo, useEffect, useMemo, useState } from 'react';
+import { createContext, Fragment, memo, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { CircleMarker, Polyline, Popup, useMap, useMapEvents } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 
@@ -44,7 +44,9 @@ type Props = {
   initialViewport?: { center: [number, number]; zoom: number };
   // 疊在自己軌跡之上的官方名單圖層；沒開的圖層不會傳進來
   referenceLayers?: ReferenceLayers | null;
-  visibleLayers?: { hundred: boolean; smallHundred: boolean; hundredTrail: boolean };
+  visibleLayers?: { hike: boolean; hundred: boolean; smallHundred: boolean; hundredTrail: boolean };
+  // 由上而下的圖層順序，決定各層在地圖上的疊放次序
+  layerOrder?: MarkerKind[];
   // 疊圖開關交給地圖自己的圖層面板顯示，不另外浮一塊在地圖上
   overlays?: OverlayControl;
 };
@@ -59,6 +61,7 @@ const REFERENCE_DONE = '#7FD4FF';
 const REFERENCE_TODO = '#4A6B7C';
 
 function ReferenceMountainLayer({ items, kind }: { items: { id: number; name: string; lat: number; lng: number; completed: boolean }[]; kind: MarkerKind }) {
+  const pane = useContext(LayerPaneContext);
   return (
     <>
       {items.map((item) => (
@@ -67,6 +70,7 @@ function ReferenceMountainLayer({ items, kind }: { items: { id: number; name: st
           center={[item.lat, item.lng]}
           radius={4}
           interactive={false}
+          pane={pane}
           // className 帶著分類，cluster 圖示才數得出這一團的組成
           className={kind}
           pathOptions={{ color: '#ffffff', weight: 1, fillColor: item.completed ? REFERENCE_DONE : REFERENCE_TODO, fillOpacity: 1 }}
@@ -77,6 +81,7 @@ function ReferenceMountainLayer({ items, kind }: { items: { id: number; name: st
 }
 
 function ReferenceTrailLayer({ items }: { items: { id: number; name: string; path: [number, number][]; completed: boolean }[] }) {
+  const pane = useContext(LayerPaneContext);
   return (
     <>
       {items.map((item) => {
@@ -86,10 +91,11 @@ function ReferenceTrailLayer({ items }: { items: { id: number; name: string; pat
         // 底圖是灰階的，單畫一條細藍線壓在山區紋理上會糊掉，白邊把線從底圖分離出來
         return (
           <Fragment key={item.id}>
-            <Polyline positions={positions} interactive={false} pathOptions={{ color: '#ffffff', weight: 5, opacity: 0.9 }} />
+            <Polyline positions={positions} interactive={false} pane={pane} pathOptions={{ color: '#ffffff', weight: 5, opacity: 0.9 }} />
             <Polyline
               positions={positions}
               interactive={false}
+              pane={pane}
               pathOptions={{ color: item.completed ? REFERENCE_DONE : REFERENCE_TODO, weight: 2.5, opacity: item.completed ? 1 : 0.75 }}
             />
           </Fragment>
@@ -97,6 +103,26 @@ function ReferenceTrailLayer({ items }: { items: { id: number; name: string; pat
       })}
     </>
   );
+}
+
+const LayerPaneContext = createContext<string | undefined>(undefined);
+
+// 每個圖層一個 Leaflet pane，用 zIndex 決定誰疊在誰上面。
+// 不靠 JSX 先後順序是因為那只影響 DOM 插入順序，Leaflet 把所有向量圖形
+// 都畫進同一個 overlayPane，先後會被它自己的管理覆蓋掉——pane 才是它的正解
+function LayerPane({ name, zIndex, children }: { name: string; zIndex: number; children: ReactNode }) {
+  const map = useMap();
+  // 自己建 pane 並設 zIndex，不用 react-leaflet 的 <Pane>——它掛載時也會呼叫
+  // createPane，而 Leaflet 對同名 pane 會直接拋錯（A pane with this name already exists）。
+  // 這裡只在不存在時建立，重繪時就只是更新 zIndex
+  if (!map.getPane(name)) map.createPane(name);
+  const pane = map.getPane(name)!;
+  pane.style.zIndex = String(zIndex);
+  // 疊圖只是背景參考，不接滑鼠事件，才不會擋住底下軌跡的點擊
+  pane.style.pointerEvents = name === 'layer-hike' ? '' : 'none';
+
+  // 把 pane 名稱交給底下的向量圖形，Leaflet 會把它們畫進這個 pane
+  return <LayerPaneContext.Provider value={name}>{children}</LayerPaneContext.Provider>;
 }
 
 // 選中路線變更時，讓地圖平移縮放到該路線範圍。
@@ -278,6 +304,7 @@ function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMa
 const TrailPolylines = memo(function TrailPolylines({ slug, path, isActive, isHover }: { slug: string; path: LngLat[]; isActive: boolean; isHover: boolean }) {
   const setHoverSlug = useMapStore((state) => state.setHoverSlug);
   const setActiveSlug = useMapStore((state) => state.setActiveSlug);
+  const pane = useContext(LayerPaneContext);
 
   // path 本身（來自 tracks Map 或 trail.path）是穩定參照，只有真的重新載入才會變，
   // 這裡才 useMemo，避免每次 render 都重新配置新陣列讓 memo 失效
@@ -294,6 +321,7 @@ const TrailPolylines = memo(function TrailPolylines({ slug, path, isActive, isHo
       {/* 透明加寬的點擊/hover 熱區 */}
       <Polyline
         positions={latLngPath}
+        pane={pane}
         pathOptions={{ color: 'transparent', weight: 16 }}
         eventHandlers={{
           mouseover: () => setHoverSlug(slug),
@@ -301,8 +329,8 @@ const TrailPolylines = memo(function TrailPolylines({ slug, path, isActive, isHo
           click: () => setActiveSlug(isActive ? null : slug),
         }}
       />
-      <Polyline positions={latLngPath} pathOptions={{ color: outlineColor, weight: outlineWeight }} interactive={false} />
-      <Polyline positions={latLngPath} pathOptions={{ color: coreColor, weight: coreWeight }} interactive={false} />
+      <Polyline positions={latLngPath} pane={pane} pathOptions={{ color: outlineColor, weight: outlineWeight }} interactive={false} />
+      <Polyline positions={latLngPath} pane={pane} pathOptions={{ color: coreColor, weight: coreWeight }} interactive={false} />
     </Fragment>
   );
 });
@@ -351,7 +379,7 @@ function useActiveHikeDetail(activeSlug: string | null, isDynamic: boolean) {
   return isDynamic && activeSlug && String(detail?.id) === activeSlug ? detail : null;
 }
 
-export default function TrailsLayer({ trails, userId, category, resizeKey, initialViewport, referenceLayers, visibleLayers, overlays }: Props) {
+export default function TrailsLayer({ trails, userId, category, resizeKey, initialViewport, referenceLayers, visibleLayers, overlays, layerOrder }: Props) {
   const hoverSlug = useMapStore((state) => state.hoverSlug);
   const activeSlug = useMapStore((state) => state.activeSlug);
   const activeBbox = useMapStore((state) => state.activeBbox);
@@ -408,6 +436,11 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
 
   // < CLUSTER_ZOOM 只畫點位（走 cluster），達到門檻才畫線；固定模式一律畫線，本來資料量就小。
   // focus 純粹是 UI 狀態（外框樣式、popup），不影響地圖該載什麼——資料完全由 zoom/視野決定
+  // order[0] 畫在最上層。Leaflet 的 overlayPane 預設 z-index 400，
+  // 各層在它之上依序排開，數字越大越上面
+  const order = layerOrder ?? ['hike', 'hundredTrail', 'hundred', 'smallHundred'];
+  const paneZ = (kind: MarkerKind) => 400 + (order.length - order.indexOf(kind));
+
   const showClusterOnly = isDynamic && zoom < CLUSTER_ZOOM;
 
   return (
@@ -424,7 +457,11 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
 
       {/* 疊圖的線先畫，自己的軌跡才會蓋在它上層——名單是背景參考，不該遮住主角。
           遠 zoom（showClusterOnly）時不畫線，只讓點併進下面的 cluster */}
-      {!showClusterOnly && referenceLayers && visibleLayers?.hundredTrail && <ReferenceTrailLayer items={referenceLayers.hundredTrail} />}
+      {!showClusterOnly && referenceLayers && visibleLayers?.hundredTrail && (
+        <LayerPane name="layer-hundredTrail" zIndex={paneZ('hundredTrail')}>
+          <ReferenceTrailLayer items={referenceLayers.hundredTrail} />
+        </LayerPane>
+      )}
 
       {activeTrail && activeTrailPopupPosition && <ActiveTrailPopup key={activeTrail.slug} trail={activeTrail} position={activeTrailPopupPosition} />}
 
@@ -433,7 +470,7 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
         // （套件不做跨 group 碰撞偵測），單一 group 則結構上不可能重疊，
         // 組成改由圓環分段表達
         <MarkerClusterGroup chunkedLoading iconCreateFunction={createClusterIcon}>
-          {markers.map((marker) =>
+          {(visibleLayers?.hike !== false ? markers : []).map((marker) =>
             marker.center ? (
               <CircleMarker
                 key={marker.id}
@@ -457,16 +494,18 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
           )}
         </MarkerClusterGroup>
       ) : (
-        <>
-          {/* 到了畫線這一層就不再畫名單的點位：這裡的主角是軌跡，
-              散在線上的小圓點只會干擾判讀。名單的分布在遠 zoom 的
-              cluster 圓餅上已經看得到，近看時讓位給線 */}
-          {lineTrails.map((trail) => {
-            // 完整軌跡還沒到就先畫簡化線，載好再換掉，中間不要出現空白
-            const path = tracks.get(trail.slug)?.path ?? trail.path;
-            return <TrailPolylines key={trail.slug} slug={trail.slug} path={path} isActive={trail.slug === activeSlug} isHover={trail.slug === hoverSlug} />;
-          })}
-        </>
+        // 到了畫線這一層就不再畫名單的點位：這裡的主角是軌跡，
+        // 散在線上的小圓點只會干擾判讀。名單的分布在遠 zoom 的
+        // cluster 圓餅上已經看得到，近看時讓位給線
+        visibleLayers?.hike !== false && (
+          <LayerPane name="layer-hike" zIndex={paneZ('hike')}>
+            {lineTrails.map((trail) => {
+              // 完整軌跡還沒到就先畫簡化線，載好再換掉，中間不要出現空白
+              const path = tracks.get(trail.slug)?.path ?? trail.path;
+              return <TrailPolylines key={trail.slug} slug={trail.slug} path={path} isActive={trail.slug === activeSlug} isHover={trail.slug === hoverSlug} />;
+            })}
+          </LayerPane>
+        )
       )}
     </MapView>
   );

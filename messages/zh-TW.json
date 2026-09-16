@@ -314,6 +314,7 @@
   },
   "MapLayerToggle": {
     "loading": "載入中",
-    "title": "推薦路線"
+    "title": "圖層",
+    "myTracks": "我的軌跡"
   }
 }
