@@ -31,7 +31,7 @@ export default async function TrailDetailPage({ params }: { params: Promise<{ tr
             distanceUnitLabel={t('distanceUnit')}
             urls={[]}
             linkLabel={(index) => t('linkLabel', { index: index + 1 })}
-            categoryNames={trail.categoryNames}
+            mountainNames={trail.categoryNames}
             note={trail.description ?? undefined}
             noteLabel={t('intro')}
             coverImageUrl={trail.coverImageUrl}

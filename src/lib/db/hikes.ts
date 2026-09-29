@@ -206,17 +206,13 @@ export async function findHikeById(id: number): Promise<Hike | null> {
   const row = rows[0];
   if (!row) return null;
 
-  const [mountainRows, categoryMap] = await Promise.all([
-    sql`SELECT mountain_id AS "mountainId" FROM hike_mountains WHERE hike_id = ${id}`,
-    fetchCategoryNames([id]),
-  ]);
+  const mountainRows = await sql`SELECT mountain_id AS "mountainId" FROM hike_mountains WHERE hike_id = ${id}`;
 
   return {
     ...toHike(row),
     // 單筆詳細頁只有一條軌跡，直接給完整座標，不必走 R2 那層
     geojson: row.geojson ? JSON.parse(row.geojson as string) : null,
     mountainIds: mountainRows.map((r) => Number(r.mountainId)),
-    categoryNames: categoryMap.get(id) ?? [],
   };
 }
 

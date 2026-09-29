@@ -15,8 +15,7 @@ type Props = {
   date?: string;
   urls: string[];
   linkLabel: (index: number) => string;
-  // 所屬名單（小百岳等），跟清單收合時的標籤一致——展開後不能變成山頭名稱
-  categoryNames?: string[];
+  mountainNames: string[];
   note?: string;
   noteLabel?: string;
   coverImageUrl?: string | null;
@@ -41,7 +40,7 @@ export default function TrailDetailCardBody({
   date,
   urls,
   linkLabel,
-  categoryNames = [],
+  mountainNames,
   note,
   noteLabel,
   coverImageUrl,
@@ -76,8 +75,8 @@ export default function TrailDetailCardBody({
                 <ExternalLink className="h-4 w-4" />
               </a>
             ))}
-            {categoryNames.map((categoryName) => (
-              <TagBadge key={categoryName} label={categoryName} />
+            {mountainNames.map((mountainName) => (
+              <TagBadge key={mountainName} label={mountainName} />
             ))}
           </div>
           {isPublic !== undefined && (
