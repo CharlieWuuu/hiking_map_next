@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { toSegments } from '../geojsonSegments';
 import { sql } from './index';
 
 // 三個官方名單疊在「我的軌跡」之上，讓資料頁一次看完走過的台灣。
@@ -18,7 +19,8 @@ export type ReferenceTrail = {
   name: string;
   lat: number | null;
   lng: number | null;
-  path: [number, number][];
+  // 多段線，見 toSegments
+  path: [number, number][][];
   completed: boolean;
 };
 
@@ -68,13 +70,9 @@ async function findMountainLayer(categoryName: string, userId: number | null): P
     }));
 }
 
-// 後端存的是 MultiLineString，疊圖只取第一條線就夠
-function flattenPath(geojson: string | null): [number, number][] {
+function flattenPath(geojson: string | null): [number, number][][] {
   if (!geojson) return [];
-  const parsed = JSON.parse(geojson) as { type?: string; coordinates?: unknown };
-  if (parsed.type === 'LineString') return (parsed.coordinates as [number, number][]) ?? [];
-  if (parsed.type === 'MultiLineString') return ((parsed.coordinates as [number, number][][]) ?? [])[0] ?? [];
-  return [];
+  return toSegments(JSON.parse(geojson));
 }
 
 async function findTrailLayer(userId: number | null): Promise<ReferenceTrail[]> {

@@ -4,11 +4,12 @@ import L from 'leaflet';
 import { useEffect } from 'react';
 import { Polyline, useMap } from 'react-leaflet';
 
+import { toLatLngSegments } from '../../../lib/geojsonSegments';
 import MapView from '../MapView';
 
 type Props = {
-  // 路線座標序列，[經度, 緯度]
-  path: [number, number][];
+  // 路線座標，多段線（見 toSegments），每段是 [經度, 緯度] 序列
+  path: [number, number][][];
   // bbox，[minLng, minLat, maxLng, maxLat]；有的話優先用這個算出剛好框住整條路線的縮放範圍
   bbox?: [number, number, number, number] | null;
   // 幾何中心（bbox centroid），[經度, 緯度]；bbox 缺漏時的 fallback，沒有的話再 fallback 成路徑中點
@@ -32,8 +33,9 @@ function FitBoundsEffect({ bbox }: { bbox: NonNullable<Props['bbox']> }) {
 }
 
 export default function TrailLayer({ path, bbox, center: centerLngLat, className }: Props) {
-  const latLngPath: [number, number][] = path.map(([lng, lat]) => [lat, lng]);
-  const center: [number, number] | undefined = centerLngLat ? [centerLngLat[1], centerLngLat[0]] : latLngPath[Math.floor(latLngPath.length / 2)];
+  const latLngPath = toLatLngSegments(path);
+  const allPoints = latLngPath.flat();
+  const center: [number, number] | undefined = centerLngLat ? [centerLngLat[1], centerLngLat[0]] : allPoints[Math.floor(allPoints.length / 2)];
 
   return (
     <MapView center={center} zoom={15} className={className}>

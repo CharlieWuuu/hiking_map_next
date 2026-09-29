@@ -12,13 +12,14 @@ import MarkerClusterGroup from 'react-leaflet-cluster';
 import type { Hike } from '../../../lib/db/hikes';
 import { fetchHikeDetail } from '../../../lib/db/hikes.query.actions';
 import type { ReferenceLayers } from '../../../lib/db/referenceLayers';
+import { toLatLngSegments, toSegments } from '../../../lib/geojsonSegments';
 import { CLUSTER_ZOOM, DETAIL_ZOOM, useMapStore, type LngLat } from '../../../lib/mapStore';
 import type { OverlayControl } from '../LayerSwitcher';
 import MapView from '../MapView';
 
 export type MapTrail = {
   slug: string;
-  path: LngLat[]; // [經度, 緯度]，這是簡化後的線
+  path: LngLat[][]; // 多段線，每段是 [經度, 緯度] 序列，這是簡化後的線
   // 完整軌跡在 R2 的網址，放大到看得出差別時才會去抓
   trackUrl?: string | null;
   // [minLng, minLat, maxLng, maxLat]，用來判斷是否進入視野
@@ -133,13 +134,13 @@ function ReferenceMountainLayer({
   );
 }
 
-function ReferenceTrailLayer({ items, kind }: { items: { id: number; name: string; path: [number, number][]; completed: boolean }[]; kind: MarkerKind }) {
+function ReferenceTrailLayer({ items, kind }: { items: { id: number; name: string; path: [number, number][][]; completed: boolean }[]; kind: MarkerKind }) {
   const pane = useContext(LayerPaneContext);
   return (
     <>
       {items.map((item) => {
         if (item.path.length === 0) return null;
-        const positions = item.path.map(([lng, lat]) => [lat, lng] as [number, number]);
+        const positions = toLatLngSegments(item.path);
         // 跟自己的軌跡一樣畫兩層：先鋪一條較寬的白色描邊，再疊上本色。
         // 底圖是灰階的，單畫一條細藍線壓在山區紋理上會糊掉，白邊把線從底圖分離出來
         return (
@@ -178,16 +179,14 @@ function LayerPane({ name, zIndex, opacity, children }: { name: string; zIndex: 
 // 吃 slug + bbox 而不是整個 trail 物件：動態模式下 bbox 來自清單點擊當下就有的資料
 // （見 mapStore 的 activeBbox），不必等 findOne 打回來才知道要飛去哪裡——那支 API
 // 只是用來補 popup 需要的縣市/距離等文字，跟「該不該移動地圖」無關
-function PanToActiveEffect({ slug, bbox, fallbackPath }: { slug: string | null; bbox: MapTrail['bbox']; fallbackPath: LngLat[] }) {
+function PanToActiveEffect({ slug, bbox, fallbackPath }: { slug: string | null; bbox: MapTrail['bbox']; fallbackPath: LngLat[][] }) {
   const map = useMap();
   const setViewport = useMapStore((state) => state.setViewport);
 
   useEffect(() => {
     if (!slug) return;
     // 有 bbox 就直接用，不必為了算範圍走過整條路徑
-    const bounds = bbox
-      ? L.latLngBounds([bbox[1], bbox[0]], [bbox[3], bbox[2]])
-      : L.latLngBounds(fallbackPath.map(([lng, lat]) => [lat, lng] as [number, number]));
+    const bounds = bbox ? L.latLngBounds([bbox[1], bbox[0]], [bbox[3], bbox[2]]) : L.latLngBounds(toLatLngSegments(fallbackPath).flat());
     if (!bounds.isValid()) return;
     map.fitBounds(bounds, { padding: [40, 40] });
     // fitBounds 如果目標範圍剛好已經在視野內、zoom 也沒變，Leaflet 不會真的觸發 moveend/zoomend，
@@ -350,14 +349,24 @@ function createClusterIcon(cluster: { getChildCount: () => number; getAllChildMa
 // 單一路線的三條線（熱區＋外框＋內線）。用 memo 包起來，hover/選取切換時只有
 // 真正變化的那一條會重新算 pathOptions，其餘路線的 Polyline 不會跟著重新 render——
 // 不然清單 hover 一晃，畫面上所有路線的線都會被判定成「props 變了」重畫一次，看起來像閃爍
-const TrailPolylines = memo(function TrailPolylines({ slug, path, isActive, isHover }: { slug: string; path: LngLat[]; isActive: boolean; isHover: boolean }) {
+const TrailPolylines = memo(function TrailPolylines({
+  slug,
+  path,
+  isActive,
+  isHover,
+}: {
+  slug: string;
+  path: LngLat[][];
+  isActive: boolean;
+  isHover: boolean;
+}) {
   const setHoverSlug = useMapStore((state) => state.setHoverSlug);
   const setActiveSlug = useMapStore((state) => state.setActiveSlug);
   const pane = useContext(LayerPaneContext);
 
   // path 本身（來自 tracks Map 或 trail.path）是穩定參照，只有真的重新載入才會變，
   // 這裡才 useMemo，避免每次 render 都重新配置新陣列讓 memo 失效
-  const latLngPath = useMemo<[number, number][]>(() => path.map(([lng, lat]) => [lat, lng]), [path]);
+  const latLngPath = useMemo(() => toLatLngSegments(path), [path]);
 
   const [outlineColor, outlineWeight, coreColor, coreWeight] = isActive
     ? ['#000000', 8, '#FFFF3C', 4]
@@ -446,7 +455,7 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
         .filter((marker) => marker.geojson)
         .map((marker) => ({
           slug: String(marker.id),
-          path: flattenGeojsonPath(marker.geojson),
+          path: toSegments(marker.geojson),
           trackUrl: marker.trackUrl,
           bbox: marker.bbox,
           name: marker.name,
@@ -470,7 +479,8 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
   const activeTrailPath = activeTrail
     ? (tracks.get(activeTrail.slug)?.path ?? lineTrails.find((trail) => trail.slug === activeTrail.slug)?.path ?? activeTrail.path)
     : null;
-  const activeTrailMidpoint = activeTrailPath?.[Math.floor(activeTrailPath.length / 2)];
+  const activeTrailPoints = activeTrailPath?.flat();
+  const activeTrailMidpoint = activeTrailPoints?.[Math.floor(activeTrailPoints.length / 2)];
   const activeTrailMidpointLng = activeTrailMidpoint?.[0];
   const activeTrailMidpointLat = activeTrailMidpoint?.[1];
   // Popup 的 position 得是穩定參照：activeTrailMidpoint 的數值就算沒變，
@@ -577,12 +587,4 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
       )}
     </MapView>
   );
-}
-
-// 後端存的是 MultiLineString，這裡只取第一條線
-function flattenGeojsonPath(geometry: unknown): LngLat[] {
-  if (!geometry || typeof geometry !== 'object' || !('type' in geometry) || !('coordinates' in geometry)) return [];
-  if (geometry.type === 'LineString') return geometry.coordinates as LngLat[];
-  if (geometry.type === 'MultiLineString') return (geometry.coordinates as LngLat[][])[0] ?? [];
-  return [];
 }

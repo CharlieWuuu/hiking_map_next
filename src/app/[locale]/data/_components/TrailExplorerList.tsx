@@ -7,7 +7,7 @@ import TrailTable from '../../../../components/TrailTable';
 import type { Mountain } from '../../../../lib/db/mountains';
 import TrailDetailExpanded from './TrailDetailExpanded';
 
-type Trail = EditableTrail & { path: [number, number][]; bbox?: [number, number, number, number] | null; categoryNames?: string[] };
+type Trail = EditableTrail & { path: [number, number][][]; bbox?: [number, number, number, number] | null; categoryNames?: string[] };
 
 type Props = {
   trails: Trail[];

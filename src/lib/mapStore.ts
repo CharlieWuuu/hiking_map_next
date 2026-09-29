@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import type { InViewHike } from './db/hikes';
 import { fetchHikesInView } from './db/hikes.query.actions';
+import { toSegments } from './geojsonSegments';
 
 export type LngLat = [number, number];
 
@@ -16,7 +17,7 @@ export const CLUSTER_ZOOM = 10;
 export const DETAIL_ZOOM = 14;
 
 type CachedTrack = {
-  path: LngLat[];
+  path: LngLat[][];
   lastUsed: number;
 };
 
@@ -109,7 +110,7 @@ export const useMapStore = create<MapState>((set, get) => ({
       const response = await fetch(url);
       if (!response.ok) throw new Error(`載入軌跡失敗：${response.status}`);
       const geometry = await response.json();
-      const path = flattenPath(geometry);
+      const path = toSegments(geometry);
 
       set((state) => {
         const next = new Map(state.tracks);
@@ -128,26 +129,22 @@ export const useMapStore = create<MapState>((set, get) => ({
   },
 }));
 
-// 後端存的是 MultiLineString，這裡只取第一條線（與清單頁的處理一致）
-function flattenPath(geometry: unknown): LngLat[] {
-  if (!geometry || typeof geometry !== 'object' || !('type' in geometry) || !('coordinates' in geometry)) return [];
-  if (geometry.type === 'LineString') return geometry.coordinates as LngLat[];
-  if (geometry.type === 'MultiLineString') return (geometry.coordinates as LngLat[][])[0] ?? [];
-  return [];
+function countPoints(path: LngLat[][]): number {
+  return path.reduce((total, segment) => total + segment.length, 0);
 }
 
 // 超過上限才淘汰，而且挑最久沒用到的。
 // 不用「離開視野就丟」是因為使用者平移地圖來回晃時會一直重抓重解析
 function evictOldest(tracks: Map<string, CachedTrack>): Map<string, CachedTrack> {
   let total = 0;
-  for (const track of tracks.values()) total += track.path.length;
+  for (const track of tracks.values()) total += countPoints(track.path);
   if (total <= MAX_CACHED_POINTS) return tracks;
 
   const byAge = [...tracks.entries()].sort((a, b) => a[1].lastUsed - b[1].lastUsed);
   for (const [slug, track] of byAge) {
     if (total <= MAX_CACHED_POINTS) break;
     tracks.delete(slug);
-    total -= track.path.length;
+    total -= countPoints(track.path);
   }
   return tracks;
 }

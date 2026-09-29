@@ -119,7 +119,7 @@ export default function GpxUploadForm() {
       </div>
 
       <TrailLayer
-        path={parsed.segments[0].map((point) => point.position)}
+        path={parsed.segments.map((segment) => segment.map((point) => point.position))}
         bbox={bbox}
         className="rounded-panel h-100 w-full flex-1 overflow-hidden lg:h-full"
       />

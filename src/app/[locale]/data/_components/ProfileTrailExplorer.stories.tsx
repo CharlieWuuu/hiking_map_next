@@ -15,10 +15,12 @@ const trails = [
     mountainIds: [1],
     urls: [],
     path: [
-      [121.2, 24.4],
-      [121.22, 24.42],
-      [121.25, 24.41],
-    ] as [number, number][],
+      [
+        [121.2, 24.4],
+        [121.22, 24.42],
+        [121.25, 24.41],
+      ],
+    ] as [number, number][][],
   },
   {
     slug: 'hehuanshan-east-peak-20260220',
@@ -31,9 +33,11 @@ const trails = [
     mountainIds: [],
     urls: [],
     path: [
-      [121.27, 24.14],
-      [121.28, 24.15],
-    ] as [number, number][],
+      [
+        [121.27, 24.14],
+        [121.28, 24.15],
+      ],
+    ] as [number, number][][],
   },
 ];
 

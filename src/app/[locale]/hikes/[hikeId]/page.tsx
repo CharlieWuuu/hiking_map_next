@@ -4,16 +4,9 @@ import TrailLayer from '../../../../components/MapView/TrailLayer';
 import PageLayout from '../../../../components/PageLayout';
 import { findHikeById } from '../../../../lib/db/hikes';
 import { findAllMountains } from '../../../../lib/db/mountains';
+import { toSegments } from '../../../../lib/geojsonSegments';
 import { getCurrentUser } from '../../../../lib/getCurrentUser';
 import HikeDetailCard from './_components/HikeDetailCard';
-
-// 後端 hike_tracks.geom 是 MultiLineString，這裡只取第一條線來畫圖
-function getHikePath(geojson: object | null | undefined): [number, number][] {
-  if (!geojson || !('type' in geojson) || !('coordinates' in geojson)) return [];
-  if (geojson.type === 'LineString') return geojson.coordinates as [number, number][];
-  if (geojson.type === 'MultiLineString') return (geojson.coordinates as [number, number][][])[0] ?? [];
-  return [];
-}
 
 export default async function HikeDetailPage({ params }: { params: Promise<{ hikeId: string }> }) {
   const { hikeId } = await params;
@@ -26,7 +19,7 @@ export default async function HikeDetailPage({ params }: { params: Promise<{ hik
   const [hike, mountains] = await Promise.all([findHikeById(Number(id)), findAllMountains().catch(() => [])]);
   if (!hike || hike.userId !== currentUser.userId) notFound();
 
-  const path = getHikePath(hike.geojson);
+  const path = toSegments(hike.geojson);
   const mountainNames = (hike.mountainIds ?? [])
     .map((mountainId) => mountains.find((mountain) => mountain.id === mountainId)?.name)
     .filter((name): name is string => Boolean(name));

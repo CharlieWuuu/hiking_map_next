@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 
 import PageLayout from '../../../components/PageLayout';
 import { findHikesPaginated } from '../../../lib/db/hikes';
+import { toSegments } from '../../../lib/geojsonSegments';
 import { getCurrentUser } from '../../../lib/getCurrentUser';
 import { TRAIL_CATEGORIES, type TrailCategory } from '../../../testing/mocks/trails/trails.data';
 import ProfileTrailExplorerWithNavigation from './_components/ProfileTrailExplorerWithNavigation';
@@ -11,15 +12,6 @@ import { PAGE_SIZE } from './constants';
 type Props = {
   searchParams: Promise<{ fullscreen?: string; edit?: string; lat?: string; lng?: string; z?: string; category?: string }>;
 };
-
-// 後端回傳的是簡化過的 MultiLineString，這裡只取第一條線來畫圖。
-// 放大到 DETAIL_ZOOM 以上時，地圖會自己去 R2 換上完整軌跡
-function getHikePath(geojson: object | null | undefined): [number, number][] {
-  if (!geojson || !('type' in geojson) || !('coordinates' in geojson)) return [];
-  if (geojson.type === 'LineString') return geojson.coordinates as [number, number][];
-  if (geojson.type === 'MultiLineString') return (geojson.coordinates as [number, number][][])[0] ?? [];
-  return [];
-}
 
 export default async function DataPage({ searchParams }: Props) {
   const { fullscreen: rawFullscreen, edit, lat, lng, z, category: rawCategory } = await searchParams;
@@ -54,7 +46,8 @@ export default async function DataPage({ searchParams }: Props) {
     categoryNames: hike.categoryNames ?? [],
     urls: hike.urls,
     note: hike.note ?? undefined,
-    path: getHikePath(hike.geojson),
+    // 後端回傳的是簡化過的 MultiLineString；放大到 DETAIL_ZOOM 以上時，地圖會自己去 R2 換上完整軌跡
+    path: toSegments(hike.geojson),
     trackUrl: hike.trackUrl,
     bbox: hike.bbox,
   }));

@@ -10,6 +10,7 @@ import { deleteHikeAction, updateHikeAction } from '../../../../lib/db/hikes.act
 import { fetchHikePageInfo, fetchHikesPage, fetchMountains, fetchReferenceLayers } from '../../../../lib/db/hikes.query.actions';
 import type { Mountain } from '../../../../lib/db/mountains';
 import type { ReferenceLayers } from '../../../../lib/db/referenceLayers';
+import { toSegments } from '../../../../lib/geojsonSegments';
 import { useMapStore } from '../../../../lib/mapStore';
 import { PAGE_SIZE } from '../constants';
 import ExpandToggleButton from './ExpandToggleButton';
@@ -32,14 +33,6 @@ type Props = {
   onToggleEditMode: () => void;
   initialViewport: { center: [number, number]; zoom: number } | null;
 };
-
-// 後端回傳的是簡化過的 MultiLineString，這裡只取第一條線來畫圖
-function getHikePath(geojson: object | null | undefined): [number, number][] {
-  if (!geojson || !('type' in geojson) || !('coordinates' in geojson)) return [];
-  if (geojson.type === 'LineString') return geojson.coordinates as [number, number][];
-  if (geojson.type === 'MultiLineString') return (geojson.coordinates as [number, number][][])[0] ?? [];
-  return [];
-}
 
 export default function ProfileTrailExplorer({
   trails: initialTrails,
@@ -156,7 +149,7 @@ export default function ProfileTrailExplorer({
           categoryNames: hike.categoryNames ?? [],
           urls: hike.urls,
           note: hike.note ?? undefined,
-          path: getHikePath(hike.geojson),
+          path: toSegments(hike.geojson),
           trackUrl: hike.trackUrl,
           bbox: hike.bbox,
         }))

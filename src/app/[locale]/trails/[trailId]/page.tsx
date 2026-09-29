@@ -7,14 +7,7 @@ import PageLayout from '../../../../components/PageLayout';
 import TrailDetailCardBody from '../../../../components/TrailDetailCardBody';
 import { Link } from '../../../../i18n/navigation';
 import { findTrailBySlug } from '../../../../lib/db/trails';
-
-// trail_geometries.geom 是 MultiLineString，只取第一條線來畫圖，跟 /hikes/[id] 的處理方式一致
-function getTrailPath(geojson: object | null): [number, number][] {
-  if (!geojson || !('type' in geojson) || !('coordinates' in geojson)) return [];
-  if (geojson.type === 'LineString') return geojson.coordinates as [number, number][];
-  if (geojson.type === 'MultiLineString') return (geojson.coordinates as [number, number][][])[0] ?? [];
-  return [];
-}
+import { toSegments } from '../../../../lib/geojsonSegments';
 
 export default async function TrailDetailPage({ params }: { params: Promise<{ trailId: string }> }) {
   const { trailId } = await params;
@@ -23,7 +16,7 @@ export default async function TrailDetailPage({ params }: { params: Promise<{ tr
   if (!trail) notFound();
 
   const t = await getTranslations('TrailDetailPage');
-  const path = getTrailPath(trail.geojson);
+  const path = toSegments(trail.geojson);
 
   return (
     <PageLayout>
