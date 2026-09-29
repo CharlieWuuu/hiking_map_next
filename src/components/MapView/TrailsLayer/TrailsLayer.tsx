@@ -159,19 +159,7 @@ const LayerPaneContext = createContext<string | undefined>(undefined);
 // 每個圖層一個 Leaflet pane，用 zIndex 決定誰疊在誰上面。
 // 不靠 JSX 先後順序是因為那只影響 DOM 插入順序，Leaflet 把所有向量圖形
 // 都畫進同一個 overlayPane，先後會被它自己的管理覆蓋掉——pane 才是它的正解
-function LayerPane({
-  name,
-  zIndex,
-  opacity,
-  interactive = false,
-  children,
-}: {
-  name: string;
-  zIndex: number;
-  opacity: number;
-  interactive?: boolean;
-  children: ReactNode;
-}) {
+function LayerPane({ name, zIndex, opacity, children }: { name: string; zIndex: number; opacity: number; children: ReactNode }) {
   const map = useMap();
   // 自己建 pane 並設 zIndex，不用 react-leaflet 的 <Pane>——它掛載時也會呼叫
   // createPane，而 Leaflet 對同名 pane 會直接拋錯（A pane with this name already exists）。
@@ -179,8 +167,10 @@ function LayerPane({
   if (!map.getPane(name)) map.createPane(name);
   const pane = map.getPane(name)!;
   pane.style.zIndex = String(zIndex);
-  // 疊圖只是背景參考，不接滑鼠事件，才不會擋住底下軌跡的點擊
-  pane.style.pointerEvents = interactive ? '' : 'none';
+  // 每個 pane 都有自己一張蓋滿視野的 SVG，那張 SVG 本身會吃點擊——
+  // 高層的 pane（選中／滑過）會把底下所有軌跡的點擊擋掉。
+  // pane 一律不接事件；可互動的線有 leaflet-interactive class，Leaflet 的 CSS 會單獨把它們打開
+  pane.style.pointerEvents = 'none';
   pane.style.opacity = String(opacity);
 
   // 把 pane 名稱交給底下的向量圖形，Leaflet 會把它們畫進這個 pane
@@ -596,7 +586,7 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
         // cluster 圓餅上已經看得到，近看時讓位給線
         visibleLayers?.hike !== false && (
           <>
-            <LayerPane name="layer-hike" zIndex={paneZ('hike')} opacity={opacityOf('hike')} interactive>
+            <LayerPane name="layer-hike" zIndex={paneZ('hike')} opacity={opacityOf('hike')}>
               {lineTrails.map((trail) => {
                 if (trail.slug === activeSlug || trail.slug === floatingHoverSlug) return null;
                 // 完整軌跡還沒到就先畫簡化線，載好再換掉，中間不要出現空白
@@ -604,14 +594,14 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
                 return <TrailPolylines key={trail.slug} slug={trail.slug} path={path} isActive={false} isHover={false} />;
               })}
             </LayerPane>
-            <LayerPane name="layer-active" zIndex={ACTIVE_PANE_Z} opacity={opacityOf('hike')} interactive>
+            <LayerPane name="layer-active" zIndex={ACTIVE_PANE_Z} opacity={opacityOf('hike')}>
               {lineTrails
                 .filter((trail) => trail.slug === activeSlug)
                 .map((trail) => (
                   <TrailPolylines key={trail.slug} slug={trail.slug} path={tracks.get(trail.slug)?.path ?? trail.path} isActive isHover={false} />
                 ))}
             </LayerPane>
-            <LayerPane name="layer-hover" zIndex={HOVER_PANE_Z} opacity={opacityOf('hike')} interactive>
+            <LayerPane name="layer-hover" zIndex={HOVER_PANE_Z} opacity={opacityOf('hike')}>
               {lineTrails
                 .filter((trail) => trail.slug === floatingHoverSlug)
                 .map((trail) => (
