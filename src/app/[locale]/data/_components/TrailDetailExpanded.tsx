@@ -5,14 +5,13 @@ import type { EditableTrail } from '../../../../components/TrailEditCard';
 import { Link } from '../../../../i18n/navigation';
 
 type Props = {
-  trail: EditableTrail;
-  mountainNames: string[];
+  trail: EditableTrail & { categoryNames?: string[] };
 };
 
 // 卡片點開後的詳細內容，跟 /hikes/[id] 單獨頁左邊卡片共用同一顯示元件（TrailDetailCardBody），
 // 這裡不需要那頁的返回/編輯按鈕——已經在 /data 清單裡，那些邏輯由外層處理，
 // 只多一個前往單獨頁的按鈕
-export default function TrailDetailExpanded({ trail, mountainNames }: Props) {
+export default function TrailDetailExpanded({ trail }: Props) {
   const t = useTranslations('ProfileDataPage');
   const tEdit = useTranslations('TrailEditCard');
 
@@ -26,7 +25,7 @@ export default function TrailDetailExpanded({ trail, mountainNames }: Props) {
       date={trail.date}
       urls={trail.urls}
       linkLabel={(index) => t('linkLabel', { index: index + 1 })}
-      mountainNames={mountainNames}
+      categoryNames={trail.categoryNames}
       note={trail.note}
       noteLabel={tEdit('note')}
       isPublic={trail.isPublic}

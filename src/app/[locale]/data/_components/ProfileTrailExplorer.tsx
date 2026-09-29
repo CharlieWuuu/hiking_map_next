@@ -7,8 +7,7 @@ import type { OverlayKey } from '../../../../components/MapView/LayerSwitcher';
 import TrailsLayer, { type MapTrail } from '../../../../components/MapView/TrailsLayer';
 import type { EditableTrail } from '../../../../components/TrailEditCard';
 import { deleteHikeAction, updateHikeAction } from '../../../../lib/db/hikes.actions';
-import { fetchHikePageInfo, fetchHikesPage, fetchMountains, fetchReferenceLayers } from '../../../../lib/db/hikes.query.actions';
-import type { Mountain } from '../../../../lib/db/mountains';
+import { fetchHikePageInfo, fetchHikesPage, fetchReferenceLayers } from '../../../../lib/db/hikes.query.actions';
 import type { ReferenceLayers } from '../../../../lib/db/referenceLayers';
 import { toSegments } from '../../../../lib/geojsonSegments';
 import { useMapStore } from '../../../../lib/mapStore';
@@ -104,14 +103,6 @@ export default function ProfileTrailExplorer({
   const setHoverSlug = useMapStore((state) => state.setHoverSlug);
   const setActiveSlug = useMapStore((state) => state.setActiveSlug);
   const [view, setView] = useState<'card' | 'table'>('card');
-  const [mountains, setMountains] = useState<Mountain[]>([]);
-
-  // 卡片展開顯示山頭名字才需要，晚點抓不影響清單本身的顯示
-  useEffect(() => {
-    fetchMountains()
-      .then(setMountains)
-      .catch(() => {});
-  }, []);
 
   // cursor 分頁天生只能往後走，要能往前翻頁就得自己記住走過的每一頁的 cursor。
   // cursorsByPage[p] = 「取得第 p 頁」要送出的 cursor；第 1 頁固定是 undefined，
@@ -227,7 +218,6 @@ export default function ProfileTrailExplorer({
                 view={view}
                 activeSlug={activeSlug}
                 isEditMode={isEditMode}
-                mountains={mountains}
                 onHoverChange={setHoverSlug}
                 onSelect={setActiveSlug}
                 onSaveTrailPatch={saveTrailPatch}

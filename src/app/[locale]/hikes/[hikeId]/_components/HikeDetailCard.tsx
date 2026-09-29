@@ -10,20 +10,17 @@ import TrailEditCard, { type EditableTrail } from '../../../../../components/Tra
 import { Link } from '../../../../../i18n/navigation';
 import type { Hike } from '../../../../../lib/db/hikes';
 import { deleteHikeAction, updateHikeAction } from '../../../../../lib/db/hikes.actions';
-import { fetchMountains } from '../../../../../lib/db/hikes.query.actions';
 
 type Props = {
   hike: Hike;
-  mountainNames: string[];
 };
 
-export default function HikeDetailCard({ hike: initialHike, mountainNames: initialMountainNames }: Props) {
+export default function HikeDetailCard({ hike: initialHike }: Props) {
   const t = useTranslations('HikeDetailPage');
   const tEdit = useTranslations('TrailEditCard');
   const router = useRouter();
 
   const [hike, setHike] = useState(initialHike);
-  const [mountainNames, setMountainNames] = useState(initialMountainNames);
   const [isEditing, setIsEditing] = useState(false);
 
   if (isEditing) {
@@ -50,12 +47,6 @@ export default function HikeDetailCard({ hike: initialHike, mountainNames: initi
           if (!result.ok) throw new Error(result.error);
           // Server Action 只回傳成功與否，本地狀態直接套用剛送出的內容
           setHike((prev) => ({ ...prev, ...patch }));
-          if (patch.mountainIds) {
-            const mountains = await fetchMountains();
-            setMountainNames(
-              patch.mountainIds.map((id) => mountains.find((mountain) => mountain.id === id)?.name).filter((name): name is string => Boolean(name))
-            );
-          }
           setIsEditing(false);
         }}
         onDelete={async () => {
@@ -78,7 +69,7 @@ export default function HikeDetailCard({ hike: initialHike, mountainNames: initi
       date={hike.date}
       urls={hike.urls}
       linkLabel={(index) => t('linkLabel', { index: index + 1 })}
-      mountainNames={mountainNames}
+      categoryNames={hike.categoryNames}
       note={hike.note ?? undefined}
       noteLabel={tEdit('note')}
       coverImageUrl={hike.coverImageUrl}

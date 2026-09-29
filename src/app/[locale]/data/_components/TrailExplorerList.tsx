@@ -4,7 +4,6 @@ import { useEffect, useRef } from 'react';
 import TrailEditCard, { type EditableTrail } from '../../../../components/TrailEditCard';
 import TrailListItem from '../../../../components/TrailListItem';
 import TrailTable from '../../../../components/TrailTable';
-import type { Mountain } from '../../../../lib/db/mountains';
 import TrailDetailExpanded from './TrailDetailExpanded';
 
 type Trail = EditableTrail & { path: [number, number][][]; bbox?: [number, number, number, number] | null; categoryNames?: string[] };
@@ -14,24 +13,13 @@ type Props = {
   view: 'card' | 'table';
   activeSlug: string | null;
   isEditMode: boolean;
-  mountains: Mountain[];
   onHoverChange: (slug: string | null) => void;
   onSelect: (slug: string | null, bbox?: [number, number, number, number] | null) => void;
   onSaveTrailPatch: (slug: string, patch: Partial<EditableTrail>) => void | Promise<void>;
   onDeleteTrail: (slug: string) => void;
 };
 
-export default function TrailExplorerList({
-  trails,
-  view,
-  activeSlug,
-  isEditMode,
-  mountains,
-  onHoverChange,
-  onSelect,
-  onSaveTrailPatch,
-  onDeleteTrail,
-}: Props) {
+export default function TrailExplorerList({ trails, view, activeSlug, isEditMode, onHoverChange, onSelect, onSaveTrailPatch, onDeleteTrail }: Props) {
   const t = useTranslations('ProfileDataPage');
   const activeRef = useRef<HTMLDivElement & HTMLButtonElement>(null);
 
@@ -97,12 +85,7 @@ export default function TrailExplorerList({
             onClick={() => onSelect(null)}
             className="rounded-panel outline-accent w-full cursor-pointer text-left outline-2 -outline-offset-2"
           >
-            <TrailDetailExpanded
-              trail={trail}
-              mountainNames={trail.mountainIds
-                .map((id) => mountains.find((mountain) => mountain.id === id)?.name)
-                .filter((name): name is string => Boolean(name))}
-            />
+            <TrailDetailExpanded trail={trail} />
           </button>
         ) : (
           <TrailListItem
