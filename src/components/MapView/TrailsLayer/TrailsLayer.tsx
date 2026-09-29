@@ -511,9 +511,13 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
   const ORDER: MarkerKind[] = ['hike', 'hundredTrail', 'hundred', 'smallHundred'];
   const paneZ = (kind: MarkerKind) => 400 + (ORDER.length - ORDER.indexOf(kind));
   const opacityOf = (kind: MarkerKind) => layerOpacity?.[kind] ?? 1;
-  // 選中的路線單獨放一個 pane，壓在所有圖層（401～404）之上，
-  // 但低於 Leaflet 的 markerPane(600)／popupPane(700)，資訊卡不會被線蓋住
+  // 選中與滑過的路線各自單獨放一個 pane，壓在所有圖層（401～404）之上，
+  // 但低於 Leaflet 的 markerPane(600)／popupPane(700)，資訊卡不會被線蓋住。
+  // 滑過的再高一層：正在指的那條永遠看得到，即使它跟選中的線重疊
   const ACTIVE_PANE_Z = 450;
+  const HOVER_PANE_Z = 460;
+  // 同一條既選中又滑過時，留在選中的 pane 用選中的樣式
+  const floatingHoverSlug = hoverSlug === activeSlug ? null : hoverSlug;
 
   const showClusterOnly = isDynamic && zoom < CLUSTER_ZOOM;
 
@@ -594,10 +598,10 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
           <>
             <LayerPane name="layer-hike" zIndex={paneZ('hike')} opacity={opacityOf('hike')} interactive>
               {lineTrails.map((trail) => {
-                if (trail.slug === activeSlug) return null;
+                if (trail.slug === activeSlug || trail.slug === floatingHoverSlug) return null;
                 // 完整軌跡還沒到就先畫簡化線，載好再換掉，中間不要出現空白
                 const path = tracks.get(trail.slug)?.path ?? trail.path;
-                return <TrailPolylines key={trail.slug} slug={trail.slug} path={path} isActive={false} isHover={trail.slug === hoverSlug} />;
+                return <TrailPolylines key={trail.slug} slug={trail.slug} path={path} isActive={false} isHover={false} />;
               })}
             </LayerPane>
             <LayerPane name="layer-active" zIndex={ACTIVE_PANE_Z} opacity={opacityOf('hike')} interactive>
@@ -605,6 +609,13 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
                 .filter((trail) => trail.slug === activeSlug)
                 .map((trail) => (
                   <TrailPolylines key={trail.slug} slug={trail.slug} path={tracks.get(trail.slug)?.path ?? trail.path} isActive isHover={false} />
+                ))}
+            </LayerPane>
+            <LayerPane name="layer-hover" zIndex={HOVER_PANE_Z} opacity={opacityOf('hike')} interactive>
+              {lineTrails
+                .filter((trail) => trail.slug === floatingHoverSlug)
+                .map((trail) => (
+                  <TrailPolylines key={trail.slug} slug={trail.slug} path={tracks.get(trail.slug)?.path ?? trail.path} isActive={false} isHover />
                 ))}
             </LayerPane>
           </>
