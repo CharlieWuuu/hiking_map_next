@@ -159,7 +159,19 @@ const LayerPaneContext = createContext<string | undefined>(undefined);
 // 每個圖層一個 Leaflet pane，用 zIndex 決定誰疊在誰上面。
 // 不靠 JSX 先後順序是因為那只影響 DOM 插入順序，Leaflet 把所有向量圖形
 // 都畫進同一個 overlayPane，先後會被它自己的管理覆蓋掉——pane 才是它的正解
-function LayerPane({ name, zIndex, opacity, children }: { name: string; zIndex: number; opacity: number; children: ReactNode }) {
+function LayerPane({
+  name,
+  zIndex,
+  opacity,
+  interactive = false,
+  children,
+}: {
+  name: string;
+  zIndex: number;
+  opacity: number;
+  interactive?: boolean;
+  children: ReactNode;
+}) {
   const map = useMap();
   // 自己建 pane 並設 zIndex，不用 react-leaflet 的 <Pane>——它掛載時也會呼叫
   // createPane，而 Leaflet 對同名 pane 會直接拋錯（A pane with this name already exists）。
@@ -168,7 +180,7 @@ function LayerPane({ name, zIndex, opacity, children }: { name: string; zIndex: 
   const pane = map.getPane(name)!;
   pane.style.zIndex = String(zIndex);
   // 疊圖只是背景參考，不接滑鼠事件，才不會擋住底下軌跡的點擊
-  pane.style.pointerEvents = name === 'layer-hike' ? '' : 'none';
+  pane.style.pointerEvents = interactive ? '' : 'none';
   pane.style.opacity = String(opacity);
 
   // 把 pane 名稱交給底下的向量圖形，Leaflet 會把它們畫進這個 pane
@@ -499,6 +511,9 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
   const ORDER: MarkerKind[] = ['hike', 'hundredTrail', 'hundred', 'smallHundred'];
   const paneZ = (kind: MarkerKind) => 400 + (ORDER.length - ORDER.indexOf(kind));
   const opacityOf = (kind: MarkerKind) => layerOpacity?.[kind] ?? 1;
+  // 選中的路線單獨放一個 pane，壓在所有圖層（401～404）之上，
+  // 但低於 Leaflet 的 markerPane(600)／popupPane(700)，資訊卡不會被線蓋住
+  const ACTIVE_PANE_Z = 450;
 
   const showClusterOnly = isDynamic && zoom < CLUSTER_ZOOM;
 
@@ -576,13 +591,23 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
         // 散在線上的小圓點只會干擾判讀。名單的分布在遠 zoom 的
         // cluster 圓餅上已經看得到，近看時讓位給線
         visibleLayers?.hike !== false && (
-          <LayerPane name="layer-hike" zIndex={paneZ('hike')} opacity={opacityOf('hike')}>
-            {lineTrails.map((trail) => {
-              // 完整軌跡還沒到就先畫簡化線，載好再換掉，中間不要出現空白
-              const path = tracks.get(trail.slug)?.path ?? trail.path;
-              return <TrailPolylines key={trail.slug} slug={trail.slug} path={path} isActive={trail.slug === activeSlug} isHover={trail.slug === hoverSlug} />;
-            })}
-          </LayerPane>
+          <>
+            <LayerPane name="layer-hike" zIndex={paneZ('hike')} opacity={opacityOf('hike')} interactive>
+              {lineTrails.map((trail) => {
+                if (trail.slug === activeSlug) return null;
+                // 完整軌跡還沒到就先畫簡化線，載好再換掉，中間不要出現空白
+                const path = tracks.get(trail.slug)?.path ?? trail.path;
+                return <TrailPolylines key={trail.slug} slug={trail.slug} path={path} isActive={false} isHover={trail.slug === hoverSlug} />;
+              })}
+            </LayerPane>
+            <LayerPane name="layer-active" zIndex={ACTIVE_PANE_Z} opacity={opacityOf('hike')} interactive>
+              {lineTrails
+                .filter((trail) => trail.slug === activeSlug)
+                .map((trail) => (
+                  <TrailPolylines key={trail.slug} slug={trail.slug} path={tracks.get(trail.slug)?.path ?? trail.path} isActive isHover={false} />
+                ))}
+            </LayerPane>
+          </>
         )
       )}
     </MapView>
