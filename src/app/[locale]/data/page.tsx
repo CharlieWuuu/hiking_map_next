@@ -67,8 +67,8 @@ export default async function DataPage({ searchParams }: Props) {
     <PageLayout title={t('title')} subtitle={<span className="text-sm">{subtitle}</span>}>
       {/* 寬螢幕：地圖與清單並排，高度直接吃滿視窗剩餘空間（main 的 grid row 傳下來的高度），
           lg:min-h-0 讓它能收縮到那個高度內而不被內容撐開。
-          窄螢幕：兩者上下堆疊，撐滿視窗反而會把彼此壓扁，所以保留 min-h-150 當固定高度 */}
-      <div className="page-wide flex min-h-150 flex-1 flex-col lg:min-h-0">
+          窄螢幕：兩者上下堆疊，整塊固定成一個視窗高（dvh），清單與地圖在裡面分，不會被內容撐高 */}
+      <div className="page-wide flex h-dvh flex-none flex-col lg:h-auto lg:min-h-0 lg:flex-1">
         <ProfileTrailExplorerWithNavigation
           trails={trails}
           totalCount={totalCount}

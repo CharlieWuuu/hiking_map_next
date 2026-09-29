@@ -215,7 +215,7 @@ export default function ProfileTrailExplorer({
   return (
     <div className={`flex h-full min-h-0 w-full gap-4 ${isMapFullscreen || isTableFullscreen ? '' : 'flex-col lg:flex-row'}`}>
       {!isMapFullscreen && (
-        <div className={`flex min-h-0 w-full flex-col gap-2 ${isTableFullscreen ? '' : 'lg:max-w-md lg:shrink-0'}`}>
+        <div className={`flex min-h-0 w-full flex-1 flex-col gap-2 ${isTableFullscreen ? '' : 'lg:max-w-md lg:flex-none'}`}>
           <div className={`rounded-panel flex min-h-0 w-full flex-col gap-2 overflow-hidden lg:h-full`}>
             <TrailExplorerToolbar
               isTableExpanded={isTableFullscreen}
@@ -247,7 +247,7 @@ export default function ProfileTrailExplorer({
       )}
 
       {!isTableFullscreen && (
-        <div className={`relative ${isMapFullscreen ? 'h-125 w-full lg:h-full' : 'h-100 w-full flex-1 lg:h-full'}`}>
+        <div className={`relative ${isMapFullscreen ? 'h-full w-full' : 'h-[50dvh] w-full shrink-0 lg:h-full lg:flex-1 lg:shrink'}`}>
           <div className="absolute top-2 right-2 z-1000">
             <ExpandToggleButton
               isExpanded={isMapFullscreen}
