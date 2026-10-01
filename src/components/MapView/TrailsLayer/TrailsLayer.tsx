@@ -547,7 +547,7 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
         // 自己的紀錄與官方名單共用同一個 cluster group：多個 group 各自聚合時彼此會疊在一起
         // （套件不做跨 group 碰撞偵測），單一 group 則結構上不可能重疊，
         // 組成改由圓環分段表達
-        <MarkerClusterGroup chunkedLoading iconCreateFunction={createClusterIcon}>
+        <MarkerClusterGroup chunkedLoading showCoverageOnHover={false} iconCreateFunction={createClusterIcon}>
           {(visibleLayers?.hike !== false ? markers : []).map((marker) =>
             marker.center ? (
               <CircleMarker
