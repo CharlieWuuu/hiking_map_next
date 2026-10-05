@@ -42,7 +42,8 @@ export default function ChartRing({ label, value, total, size = 120, strokeWidth
     arc
       .transition()
       .duration(1000)
-      .attr('stroke-dashoffset', circumference * (1 - Math.min(value / total, 1)));
+      // 分母是 0（例如分類總數查不到）時 value/total 會是 NaN，當成沒有進度畫空環
+      .attr('stroke-dashoffset', circumference * (1 - (total > 0 ? Math.min(value / total, 1) : 0)));
 
     // 文字用卡片自己的 contrast 色（而不是 accent 或 background-contrary），
     // 這個元件會被放進不同底色的卡片（例如純黑的 highlight 卡），套用畫面通用的顏色會沒對比度看不到

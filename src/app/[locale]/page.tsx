@@ -6,7 +6,7 @@ import ChartRing from '../../components/ChartRing';
 import PageLayout from '../../components/PageLayout';
 import TrailListItem from '../../components/TrailListItem';
 import { Link } from '../../i18n/navigation';
-import { findAllHikes, getHikeStats } from '../../lib/db/hikes';
+import { findAllHikes, getAchievementTotals, getHikeStats } from '../../lib/db/hikes';
 import { nearby } from '../../lib/db/search';
 import { fillMonthlyDistance } from '../../lib/fillMonthlyDistance';
 import { getCurrentUser } from '../../lib/getCurrentUser';
@@ -23,9 +23,11 @@ export default async function Home() {
   const tCommon = await getTranslations('Common');
   const currentUser = await getCurrentUser();
 
-  const [stats, hikes] = await Promise.all([
+  const [stats, hikes, guestAchievementTotals] = await Promise.all([
     currentUser ? getHikeStats(Number(currentUser.userId)).catch(() => null) : Promise.resolve(null),
     currentUser ? findAllHikes(Number(currentUser.userId)) : Promise.resolve([]),
+    // 沒登入也照樣畫成就環（進度都是 0），讓人知道登入後會看到什麼；分母跟使用者無關
+    currentUser ? Promise.resolve(null) : getAchievementTotals().catch(() => null),
   ]);
   // 首頁只當一份摘要，近期紀錄取前 5 筆就好；完整清單去 /data 看
   const RECENT_HIKES_COUNT = 5;
@@ -44,14 +46,19 @@ export default async function Home() {
   // 統計只留一張最能一眼看出趨勢的圖，完整的六張圖表去 /chart 頁看。
   // 改成每月總距離而不是每筆紀錄一個點：紀錄一多，逐筆畫在同一張窄圖上會擠成一團看不出趨勢，
   // 按月加總後資料點數固定（近 12 個月），時間軸間距也均勻
+  // 沒登入時一樣補滿 24 個月，畫成全為 0 的線，跟成就環的 0 一致
   const trendData = fillMonthlyDistance(stats?.monthlyDistance ?? [], MONTHLY_DISTANCE_MONTHS_COUNT).map((d) => ({
     date: `${d.month}-01`,
     value: d.distanceKm,
   }));
+  const achievements = stats?.achievements ?? { hundred: 0, smallHundred: 0, hundredTrail: 0 };
+  const achievementTotals = stats?.achievementTotals ?? guestAchievementTotals;
 
   return (
     <PageLayout>
-      {currentUser && (
+      {/* 沒登入時各區塊照樣出現、只是沒有資料並提示登入——
+          否則首頁只剩推薦路線，看不出這個網站是做什麼的 */}
+      {currentUser ? (
         <div className="flex items-center gap-8">
           {currentUser.avatar ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -73,21 +80,43 @@ export default async function Home() {
             )}
           </div>
         </div>
+      ) : (
+        <div className="flex items-center gap-8">
+          <span className="bg-panel-active border-accent rounded-panel flex h-30 w-30 shrink-0 items-center justify-center border-4">
+            <CircleUserRound className="text-background-contrary/60 h-16 w-16" />
+          </span>
+          <div className="flex flex-col items-start gap-3">
+            <p className="text-lg">{t('loginPrompt')}</p>
+            <Link href="/login" className="bg-panel-active hover:bg-panel-active-lighten rounded-panel px-4 py-2 text-sm transition-colors">
+              {t('loginCta')}
+            </Link>
+          </div>
+        </div>
       )}
 
-      {currentUser && stats && (
+      {achievementTotals && (
         <div className="flex flex-wrap justify-around gap-4">
-          <ChartRing label={tProfile('achievementHundred')} value={stats.achievements.hundred} total={stats.achievementTotals.hundred} />
-          <ChartRing label={tProfile('achievementSmallHundred')} value={stats.achievements.smallHundred} total={stats.achievementTotals.smallHundred} />
-          <ChartRing label={tProfile('achievementHundredTrail')} value={stats.achievements.hundredTrail} total={stats.achievementTotals.hundredTrail} />
+          <ChartRing label={tProfile('achievementHundred')} value={achievements.hundred} total={achievementTotals.hundred} />
+          <ChartRing label={tProfile('achievementSmallHundred')} value={achievements.smallHundred} total={achievementTotals.smallHundred} />
+          <ChartRing label={tProfile('achievementHundredTrail')} value={achievements.hundredTrail} total={achievementTotals.hundredTrail} />
         </div>
       )}
 
-      {currentUser && (
-        <div className="bg-panel rounded-panel flex h-50 flex-col gap-4 p-4">
-          <span className="text-background-contrary/60 text-sm">{tCharts('distanceTrend')}</span>
-          <ChartLine data={trendData} emptyLabel={tCommon('noData')} unit={tCharts('unitKm')} />
-        </div>
+      <div className="bg-panel rounded-panel flex h-50 flex-col gap-4 p-4">
+        <span className="text-background-contrary/60 text-sm">{tCharts('distanceTrend')}</span>
+        <ChartLine data={trendData} emptyLabel={tCommon('noData')} unit={tCharts('unitKm')} />
+      </div>
+
+      {!currentUser && (
+        <section className="flex flex-col gap-4">
+          <h2 className="text-2xl font-bold">{t('latestHike')}</h2>
+          <Link
+            href="/login"
+            className="bg-panel rounded-panel text-background-contrary/60 hover:text-background-contrary flex h-24 items-center justify-center text-sm transition-colors"
+          >
+            {t('loginRequired')}
+          </Link>
+        </section>
       )}
 
       {currentUser && recentHikes.length > 0 && (

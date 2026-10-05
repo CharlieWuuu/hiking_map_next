@@ -229,8 +229,34 @@ export async function findHikeById(id: number): Promise<Hike | null> {
   };
 }
 
+// 成就環的分母：各分類總共有幾座山／幾條步道。跟使用者無關，沒登入時首頁也拿它畫空的成就環。
+// 百岳／小百岳數的是山，百大必訪步道數的是步道，來源表不同
+export async function getAchievementTotals(): Promise<HikeStats['achievementTotals']> {
+  const rows = await sql`SELECT c.name AS "categoryName", COUNT(*) AS count
+      FROM mountains m
+      JOIN mountain_category_map mcm ON mcm.mountain_id = m.id
+      JOIN categories c ON c.id = mcm.category_id
+      WHERE c.name IN ('百岳', '小百岳')
+      GROUP BY c.name
+      UNION ALL
+      SELECT c.name AS "categoryName", COUNT(*) AS count
+      FROM trails t
+      JOIN trail_category_map tcm ON tcm.trail_id = t.id
+      JOIN categories c ON c.id = tcm.category_id
+      WHERE c.name = '百大必訪步道'
+      GROUP BY c.name`;
+
+  // 分母查不到時退回 0，ChartRing 以 value/total 算弧長，0 會讓它畫成空環而不是滿環
+  const achievementTotals = { hundred: 0, smallHundred: 0, hundredTrail: 0 };
+  for (const row of rows) {
+    const key = CATEGORY_NAME_TO_ACHIEVEMENT_KEY[row.categoryName as string];
+    if (key) achievementTotals[key] = Number(row.count);
+  }
+  return achievementTotals;
+}
+
 export async function getHikeStats(userId: number): Promise<HikeStats> {
-  const [totals, monthlyDistance, countyStats, mountainAchievements, hundredTrail, categoryTotals] = await Promise.all([
+  const [totals, monthlyDistance, countyStats, mountainAchievements, hundredTrail, achievementTotals] = await Promise.all([
     sql`SELECT COALESCE(SUM(distance_km), 0) AS "totalDistanceKm", COUNT(*) AS "hikeCount" FROM hikes WHERE user_id = ${userId}`,
     sql`SELECT TO_CHAR(date, 'YYYY-MM') AS month, SUM(distance_km) AS "distanceKm"
         FROM hikes WHERE user_id = ${userId} GROUP BY month ORDER BY month`,
@@ -252,20 +278,7 @@ export async function getHikeStats(userId: number): Promise<HikeStats> {
         JOIN trail_category_map tcm ON tcm.trail_id = h.trail_id
         JOIN categories c ON c.id = tcm.category_id
         WHERE h.user_id = ${userId} AND c.name = '百大必訪步道'`,
-    // 成就環的分母。百岳／小百岳數的是山，百大必訪步道數的是步道，來源表不同
-    sql`SELECT c.name AS "categoryName", COUNT(*) AS count
-        FROM mountains m
-        JOIN mountain_category_map mcm ON mcm.mountain_id = m.id
-        JOIN categories c ON c.id = mcm.category_id
-        WHERE c.name IN ('百岳', '小百岳')
-        GROUP BY c.name
-        UNION ALL
-        SELECT c.name AS "categoryName", COUNT(*) AS count
-        FROM trails t
-        JOIN trail_category_map tcm ON tcm.trail_id = t.id
-        JOIN categories c ON c.id = tcm.category_id
-        WHERE c.name = '百大必訪步道'
-        GROUP BY c.name`,
+    getAchievementTotals(),
   ]);
 
   const achievements = { hundred: 0, smallHundred: 0, hundredTrail: 0 };
@@ -274,13 +287,6 @@ export async function getHikeStats(userId: number): Promise<HikeStats> {
     if (key) achievements[key] = Number(row.count);
   }
   achievements.hundredTrail = Number(hundredTrail[0]?.count ?? 0);
-
-  // 分母查不到時退回 0，ChartRing 以 value/total 算弧長，0 會讓它畫成空環而不是滿環
-  const achievementTotals = { hundred: 0, smallHundred: 0, hundredTrail: 0 };
-  for (const row of categoryTotals) {
-    const key = CATEGORY_NAME_TO_ACHIEVEMENT_KEY[row.categoryName as string];
-    if (key) achievementTotals[key] = Number(row.count);
-  }
 
   return {
     totalDistanceKm: Number(totals[0].totalDistanceKm),
