@@ -59,6 +59,8 @@ if (localStorage.getItem('${NAV_COLLAPSED_STORAGE_KEY}') === 'true') document.do
         />
       </head>
       <body className="flex h-full flex-col">
+        {/* iOS 27 PWA 頂端強制模糊的解法，見 globals.css 的 .ios-blur-fix */}
+        <div className="ios-blur-fix" aria-hidden="true" />
         <NextIntlClientProvider messages={messages}>
           <DebugSetup>
             <AuthInitializer />

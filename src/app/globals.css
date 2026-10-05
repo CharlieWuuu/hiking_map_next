@@ -70,6 +70,31 @@ main:has(.page-wide) {
   pointer-events: none;
 }
 
+/* iOS 27 起，加到主畫面的 PWA 若判定畫面頂端沒有固定元素，會在狀態列下方強制疊一層漸層模糊。
+   放一個頂端的 fixed 元素讓 WebKit 認為有固定 header：它看的是 CSS 設定（fixed、有背景色、高度超過 10px），
+   不是實際畫出來的像素，所以用 background-clip: text 把背景裁到「沒有文字」的範圍，畫面上完全看不到。
+   opacity: 0、visibility: hidden、display: none 都會讓它不算數，模糊又會回來。
+   背景色會被拿去塗狀態列，用主題底色才會跟畫面接起來。只在 standalone（PWA）模式下啟用，不動 Safari 分頁的行為。
+   參考：https://qiita.com/na-trium-144 「iOS 27 PWAで画面上端に表示されるブラーを消す方法」 */
+.ios-blur-fix {
+  display: none;
+}
+@media (display-mode: standalone) {
+  .ios-blur-fix {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 11px;
+    z-index: 2147483647;
+    pointer-events: none;
+    background-color: var(--color-background);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+}
+
 /* 細窄、跟卡片同色系的捲軸，取代瀏覽器預設樣式。平常捲軸透明不佔視覺份量，滑鼠移進容器才顯示。
    純用標準 scrollbar-color/-width，不疊加 ::-webkit-scrollbar 系列——兩者同時設定在 Chromium 上
    會互相干擾導致 hover 沒有效果，只留 scrollbar-color 這一套，跟 :hover 才會確實生效 */
