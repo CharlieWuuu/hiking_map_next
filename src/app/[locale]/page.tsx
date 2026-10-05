@@ -88,12 +88,9 @@ export default async function Home() {
           <span className="bg-panel-active border-accent rounded-panel flex h-30 w-30 shrink-0 items-center justify-center border-4">
             <CircleUserRound className={PLACEHOLDER_AVATAR_ICON_CLASS} />
           </span>
-          <div className="flex flex-col items-start gap-3">
-            <p className="text-lg">{t('loginPrompt')}</p>
-            <Link href="/login" className="bg-panel-active hover:bg-panel-active-lighten rounded-panel px-4 py-2 text-sm transition-colors">
-              {t('loginCta')}
-            </Link>
-          </div>
+          <Link href="/login" className="bg-panel-active hover:bg-panel-active-lighten rounded-panel px-4 py-2 text-sm transition-colors">
+            {t('loginCta')}
+          </Link>
         </div>
       )}
 
@@ -110,37 +107,30 @@ export default async function Home() {
         <ChartLine data={trendData} emptyLabel={tCommon('noData')} unit={tCharts('unitKm')} />
       </div>
 
-      {!currentUser && (
-        <section className="flex flex-col gap-4">
-          <h2 className="text-2xl font-bold">{t('latestHike')}</h2>
-          <Link
-            href="/login"
-            className="bg-panel rounded-panel text-background-contrary/60 hover:text-background-contrary flex h-24 items-center justify-center text-sm transition-colors"
-          >
-            {t('loginRequired')}
-          </Link>
-        </section>
-      )}
-
-      {currentUser && recentHikes.length > 0 && (
-        <section className="flex flex-col gap-4">
-          <h2 className="text-2xl font-bold">{t('latestHike')}</h2>
-          {recentHikes.map((hike) => (
-            <TrailListItem
-              key={hike.id}
-              href={`/hikes/${hike.id}`}
-              name={hike.name}
-              county={hike.county ?? ''}
-              town={hike.town ?? ''}
-              date={hike.date}
-              distanceKm={hike.distanceKm}
-            />
-          ))}
-          <Link href="/data" className="bg-panel-active hover:bg-panel-active-lighten rounded-panel mx-auto w-fit px-4 py-2 text-sm transition-colors">
-            {t('viewAllHikes')}
-          </Link>
-        </section>
-      )}
+      {/* 沒登入或還沒有任何紀錄時，區塊照樣出現、顯示「無紀錄」 */}
+      <section className="flex flex-col gap-4">
+        <h2 className="text-2xl font-bold">{t('latestHike')}</h2>
+        {recentHikes.length === 0 ? (
+          <div className="bg-panel rounded-panel text-background-contrary/60 flex h-24 items-center justify-center text-sm">{t('noHikes')}</div>
+        ) : (
+          <>
+            {recentHikes.map((hike) => (
+              <TrailListItem
+                key={hike.id}
+                href={`/hikes/${hike.id}`}
+                name={hike.name}
+                county={hike.county ?? ''}
+                town={hike.town ?? ''}
+                date={hike.date}
+                distanceKm={hike.distanceKm}
+              />
+            ))}
+            <Link href="/data" className="bg-panel-active hover:bg-panel-active-lighten rounded-panel mx-auto w-fit px-4 py-2 text-sm transition-colors">
+              {t('viewAllHikes')}
+            </Link>
+          </>
+        )}
+      </section>
 
       {recommendedTrails.length > 0 && (
         <section className="flex flex-col gap-4">

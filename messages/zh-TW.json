@@ -67,7 +67,7 @@
     "hikeCountValue": "{count} 次健行",
     "loginPrompt": "登入後即可看到自己的健行統計",
     "loginCta": "前往登入",
-    "loginRequired": "請登入"
+    "noHikes": "無紀錄"
   },
   "LoginPage": {
     "title": "登入",

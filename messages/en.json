@@ -67,7 +67,7 @@
     "hikeCountValue": "{count} hikes",
     "loginPrompt": "Sign in to see your hiking stats",
     "loginCta": "Go to sign in",
-    "loginRequired": "Please sign in"
+    "noHikes": "No hikes yet"
   },
   "LoginPage": {
     "title": "Log in",

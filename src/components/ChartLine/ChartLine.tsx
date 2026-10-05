@@ -11,6 +11,7 @@ type Props = {
 };
 
 const FALLBACK_WIDTH = 400;
+const Y_MIN_MAX = 5;
 const HEIGHT = 160;
 // top 要容納 y 軸最高刻度，再加上它上方那行單位文字，否則兩者會重疊
 const MARGIN = { top: 28, right: 0, bottom: 20, left: 0 };
@@ -50,9 +51,11 @@ export default function ChartLine({ data, emptyLabel, unit }: Props) {
       .range([MARGIN.left, width - MARGIN.right]);
 
     const maxValue = d3.max(parsed, (d) => d.value) ?? 0;
+    // y 軸上限至少 5：刻度用整數格式顯示，範圍太小（例如全是 0 時的 0～1）會切出 0.2、0.4…
+    // 這種小數刻度，四捨五入後變成 0、0、1、1、1 重複的標籤
     const y = d3
       .scaleLinear()
-      .domain([0, Math.max(maxValue, 1)])
+      .domain([0, Math.max(maxValue, Y_MIN_MAX)])
       .nice()
       .range([HEIGHT - MARGIN.bottom, MARGIN.top]);
 
