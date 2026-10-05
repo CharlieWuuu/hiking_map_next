@@ -12,6 +12,9 @@ import { fillMonthlyDistance } from '../../lib/fillMonthlyDistance';
 import { getCurrentUser } from '../../lib/getCurrentUser';
 
 const MONTHLY_DISTANCE_MONTHS_COUNT = 24;
+// 預設頭像 icon 的顏色要不透明：icon 是幾條交疊的線，半透明色會在交疊處疊深。
+// 直接把 contrary 色混進頭像底色（panel-active），得到看起來一樣淡、但不透明的灰
+const PLACEHOLDER_AVATAR_ICON_CLASS = 'h-16 w-16 text-[color-mix(in_srgb,var(--color-background-contrary)_60%,var(--color-panel-active))]';
 const RECOMMENDED_TRAILS_COUNT = 5;
 // 沒有任何紀錄可以判斷活動範圍時的預設地點（台北車站），與探索頁的備援一致
 const TAIPEI_FALLBACK = { lat: 25.033, lng: 121.5654 };
@@ -65,7 +68,7 @@ export default async function Home() {
             <img src={currentUser.avatar} alt="" className="border-accent rounded-panel h-30 w-30 shrink-0 border-4 object-cover" />
           ) : (
             <span className="bg-panel-active border-accent rounded-panel flex h-30 w-30 shrink-0 items-center justify-center border-4">
-              <CircleUserRound className="text-background-contrary/60 h-16 w-16" />
+              <CircleUserRound className={PLACEHOLDER_AVATAR_ICON_CLASS} />
             </span>
           )}
           <div className="flex flex-col gap-2">
@@ -83,7 +86,7 @@ export default async function Home() {
       ) : (
         <div className="flex items-center gap-8">
           <span className="bg-panel-active border-accent rounded-panel flex h-30 w-30 shrink-0 items-center justify-center border-4">
-            <CircleUserRound className="text-background-contrary/60 h-16 w-16" />
+            <CircleUserRound className={PLACEHOLDER_AVATAR_ICON_CLASS} />
           </span>
           <div className="flex flex-col items-start gap-3">
             <p className="text-lg">{t('loginPrompt')}</p>
