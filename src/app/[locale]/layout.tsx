@@ -34,6 +34,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: t('title'),
     description: t('description'),
+    // iOS 加到主畫面時以 App 形式（無網址列）開啟，主畫面上顯示的名稱也用這個
+    appleWebApp: { capable: true, title: t('title') },
   };
 }
 
