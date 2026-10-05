@@ -32,7 +32,7 @@ export default async function ChartPage() {
               <span className="text-sm opacity-70">{t('hikeCount', { count: stats.hikeCount })}</span>
             </div>
           </div>
-          <div className="bg-highlight text-highlight-contrast rounded-panel flex flex-wrap items-center justify-around gap-4 p-6">
+          <div className="bg-highlight text-highlight-contrast rounded-panel flex items-center justify-around gap-4 p-6">
             <ChartRing label={t('achievementHundred')} value={stats.achievements.hundred} total={stats.achievementTotals.hundred} />
             <ChartRing label={t('achievementSmallHundred')} value={stats.achievements.smallHundred} total={stats.achievementTotals.smallHundred} />
             <ChartRing label={t('achievementHundredTrail')} value={stats.achievements.hundredTrail} total={stats.achievementTotals.hundredTrail} />

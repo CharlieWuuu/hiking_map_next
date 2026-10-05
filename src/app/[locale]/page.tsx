@@ -95,7 +95,7 @@ export default async function Home() {
       )}
 
       {achievementTotals && (
-        <div className="flex flex-wrap justify-around gap-4">
+        <div className="flex justify-around gap-4">
           <ChartRing label={tProfile('achievementHundred')} value={achievements.hundred} total={achievementTotals.hundred} />
           <ChartRing label={tProfile('achievementSmallHundred')} value={achievements.smallHundred} total={achievementTotals.smallHundred} />
           <ChartRing label={tProfile('achievementHundredTrail')} value={achievements.hundredTrail} total={achievementTotals.hundredTrail} />

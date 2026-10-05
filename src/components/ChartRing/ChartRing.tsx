@@ -67,9 +67,11 @@ export default function ChartRing({ label, value, total, size = 120, strokeWidth
   }, [value, total, size, strokeWidth]);
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <svg ref={ref} width={size} height={size} viewBox={`0 0 ${size} ${size}`} />
-      <span className="text-sm opacity-70">{label}</span>
+    // 三個環並排時平分整列寬度，窄螢幕（手機）就跟著縮小、不換行；寬螢幕最大維持 size。
+    // 圖形與文字都畫在 viewBox 座標裡，SVG 縮放時會等比例一起縮
+    <div className="flex min-w-0 flex-1 flex-col items-center gap-2">
+      <svg ref={ref} viewBox={`0 0 ${size} ${size}`} className="h-auto w-full" style={{ maxWidth: size }} />
+      <span className="text-center text-sm opacity-70">{label}</span>
     </div>
   );
 }
