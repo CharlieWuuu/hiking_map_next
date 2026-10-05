@@ -112,9 +112,17 @@ export default function ChartLine({ data, emptyLabel, unit }: Props) {
       return formatYear(date);
     };
 
+    // 刻度數量依圖表寬度決定：一個「2025/04」標籤約 60px 寬，每 70px 放一個才不會互相重疊。
+    // ticks(n) 只是建議值，d3 會挑最接近的時間間隔（1、3、6 個月、1 年…），
+    // 實際數量可能超過 n（例如 24 個月要 4 個，它仍給每 3 個月一格共 8 個）——超過就每隔幾個取一個
+    const X_TICK_SPACING = 70;
+    const maxXTicks = Math.max(2, Math.floor((width - MARGIN.left - MARGIN.right) / X_TICK_SPACING));
+    const candidateXTicks = x.ticks(Math.min(parsed.length, maxXTicks));
+    const xTickStep = Math.ceil(candidateXTicks.length / maxXTicks);
+    const xTickValues = candidateXTicks.filter((_, index) => index % xTickStep === 0);
     const xAxis = d3
       .axisBottom(x)
-      .ticks(Math.min(parsed.length, 6))
+      .tickValues(xTickValues)
       .tickSizeInner(0)
       .tickSizeOuter(0)
       .tickPadding(5)
@@ -149,10 +157,12 @@ export default function ChartLine({ data, emptyLabel, unit }: Props) {
       // x 以文字實際寬度算出置中位置，跟刻度數字用同一套對齊邏輯
       const [, axisTop] = y.range();
       const UNIT_LINE_HEIGHT = 15;
+      // 再往上多留一點，跟最高刻度數字之間不要貼太緊
+      const UNIT_EXTRA_GAP = 4;
       const unitText = svg
         .append('text')
         .text(unit)
-        .attr('y', Math.max(UNIT_LINE_HEIGHT / 2, axisTop - UNIT_LINE_HEIGHT))
+        .attr('y', Math.max(UNIT_LINE_HEIGHT / 2, axisTop - UNIT_LINE_HEIGHT - UNIT_EXTRA_GAP))
         .attr('dy', '0.32em')
         .attr('text-anchor', 'middle')
         .attr('fill', 'var(--color-background-contrary)')
