@@ -11,6 +11,7 @@ import { Link } from '../../../../../i18n/navigation';
 import type { Hike } from '../../../../../lib/db/hikes';
 import { deleteHikeAction, updateHikeAction } from '../../../../../lib/db/hikes.actions';
 import { fetchMountains } from '../../../../../lib/db/hikes.query.actions';
+import { useMapStore } from '../../../../../lib/mapStore';
 
 type Props = {
   hike: Hike;
@@ -21,6 +22,7 @@ export default function HikeDetailCard({ hike: initialHike, mountainNames: initi
   const t = useTranslations('HikeDetailPage');
   const tEdit = useTranslations('TrailEditCard');
   const router = useRouter();
+  const invalidateHikeDetail = useMapStore((state) => state.invalidateHikeDetail);
 
   const [hike, setHike] = useState(initialHike);
   const [mountainNames, setMountainNames] = useState(initialMountainNames);
@@ -48,6 +50,8 @@ export default function HikeDetailCard({ hike: initialHike, mountainNames: initi
         onSave={async (patch) => {
           const result = await updateHikeAction(hike.id, patch);
           if (!result.ok) throw new Error(result.error);
+          // 回到 /data 時地圖浮現卡要拿到新資料，store 裡的詳情快取得丟掉
+          invalidateHikeDetail(String(hike.id));
           // Server Action 只回傳成功與否，本地狀態直接套用剛送出的內容
           setHike((prev) => ({ ...prev, ...patch }));
           if (patch.mountainIds) {
@@ -61,6 +65,7 @@ export default function HikeDetailCard({ hike: initialHike, mountainNames: initi
         onDelete={async () => {
           const deleted = await deleteHikeAction(hike.id);
           if (!deleted.ok) throw new Error(deleted.error);
+          invalidateHikeDetail(String(hike.id));
           router.push('/data');
         }}
       />

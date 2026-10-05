@@ -193,6 +193,19 @@ export async function findAllHikes(userId: number, category?: string): Promise<H
   return hikes.map((h) => ({ ...h, categoryNames: categoryMap.get(h.id) ?? [] }));
 }
 
+// 只要基本欄位的單筆查詢（名稱、縣市、距離、bbox 等），不帶完整軌跡與山頭關聯。
+// 地圖浮現卡用這個：一條完整軌跡的 geojson 可能上百 KB，卡片完全用不到
+export async function findHikeMetaById(id: number): Promise<Hike | null> {
+  const rows = await sql`
+    SELECT ${sql.unsafe(HIKE_COLUMNS)}
+    FROM hikes h
+    LEFT JOIN hike_tracks t ON t.hike_id = h.id
+    WHERE h.id = ${id}
+    LIMIT 1
+  `;
+  return rows[0] ? toHike(rows[0]) : null;
+}
+
 export async function findHikeById(id: number): Promise<Hike | null> {
   const rows = await sql`
     SELECT ${sql.unsafe(HIKE_COLUMNS)},

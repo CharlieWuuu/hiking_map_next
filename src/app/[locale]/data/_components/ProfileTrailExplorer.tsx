@@ -103,6 +103,7 @@ export default function ProfileTrailExplorer({
   const activeSlug = useMapStore((state) => state.activeSlug);
   const setHoverSlug = useMapStore((state) => state.setHoverSlug);
   const setActiveSlug = useMapStore((state) => state.setActiveSlug);
+  const invalidateHikeDetail = useMapStore((state) => state.invalidateHikeDetail);
   const [view, setView] = useState<'card' | 'table'>('card');
   const [mountains, setMountains] = useState<Mountain[]>([]);
 
@@ -185,6 +186,8 @@ export default function ProfileTrailExplorer({
   async function saveTrailPatch(slug: string, patch: Partial<EditableTrail>) {
     const result = await updateHikeAction(Number(slug), patch);
     if (!result.ok) throw new Error(result.error);
+    // 地圖浮現卡的詳情快取也要丟掉，不然卡片還是舊名稱、舊縣市
+    invalidateHikeDetail(slug);
     setTrails((prev) =>
       prev.map((trail) =>
         trail.slug === slug
@@ -199,6 +202,7 @@ export default function ProfileTrailExplorer({
   async function deleteTrail(slug: string) {
     const deleted = await deleteHikeAction(Number(slug));
     if (!deleted.ok) throw new Error(deleted.error);
+    invalidateHikeDetail(slug);
     setTrails((prev) => prev.filter((trail) => trail.slug !== slug));
     if (activeSlug === slug) setActiveSlug(null);
     // 刪除後總數變了，簡單起見重新載入目前這頁

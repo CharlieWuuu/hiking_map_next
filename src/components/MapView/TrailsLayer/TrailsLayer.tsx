@@ -5,12 +5,10 @@ import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 
 import L from 'leaflet';
 import { useTranslations } from 'next-intl';
-import { createContext, Fragment, memo, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, Fragment, memo, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CircleMarker, Polygon, Polyline, Popup, useMap, useMapEvents } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 
-import type { Hike } from '../../../lib/db/hikes';
-import { fetchHikeDetail } from '../../../lib/db/hikes.query.actions';
 import type { ReferenceLayers } from '../../../lib/db/referenceLayers';
 import { toLatLngSegments, toSegments } from '../../../lib/geojsonSegments';
 import { CLUSTER_ZOOM, DETAIL_ZOOM, useMapStore, type LngLat } from '../../../lib/mapStore';
@@ -354,15 +352,27 @@ const TrailPolylines = memo(function TrailPolylines({
   path,
   isActive,
   isHover,
+  registerLines,
 }: {
   slug: string;
   path: LngLat[][];
   isActive: boolean;
   isHover: boolean;
+  registerLines: (slug: string, lines: L.Polyline[] | null) => void;
 }) {
   const setHoverSlug = useMapStore((state) => state.setHoverSlug);
   const setActiveSlug = useMapStore((state) => state.setActiveSlug);
   const pane = useContext(LayerPaneContext);
+  const hitRef = useRef<L.Polyline>(null);
+  const outlineRef = useRef<L.Polyline>(null);
+  const coreRef = useRef<L.Polyline>(null);
+
+  // 把三條線的 Leaflet 實體交給上層，選中／滑過時由上層統一決定疊放順序
+  useEffect(() => {
+    const lines = [hitRef.current, outlineRef.current, coreRef.current].filter((line): line is L.Polyline => line !== null);
+    registerLines(slug, lines);
+    return () => registerLines(slug, null);
+  }, [slug, registerLines]);
 
   // path 本身（來自 tracks Map 或 trail.path）是穩定參照，只有真的重新載入才會變，
   // 這裡才 useMemo，避免每次 render 都重新配置新陣列讓 memo 失效
@@ -378,6 +388,7 @@ const TrailPolylines = memo(function TrailPolylines({
     <Fragment key={slug}>
       {/* 透明加寬的點擊/hover 熱區 */}
       <Polyline
+        ref={hitRef}
         positions={latLngPath}
         pane={pane}
         pathOptions={{ color: 'transparent', weight: 16 }}
@@ -387,54 +398,151 @@ const TrailPolylines = memo(function TrailPolylines({
           click: () => setActiveSlug(isActive ? null : slug),
         }}
       />
-      <Polyline positions={latLngPath} pane={pane} pathOptions={{ color: outlineColor, weight: outlineWeight }} interactive={false} />
-      <Polyline positions={latLngPath} pane={pane} pathOptions={{ color: coreColor, weight: coreWeight }} interactive={false} />
+      <Polyline ref={outlineRef} positions={latLngPath} pane={pane} pathOptions={{ color: outlineColor, weight: outlineWeight }} interactive={false} />
+      <Polyline ref={coreRef} positions={latLngPath} pane={pane} pathOptions={{ color: coreColor, weight: coreWeight }} interactive={false} />
     </Fragment>
   );
 });
 
-// 選中路線時，浮現一張跟版面其他卡片同一套語言的懸浮資訊卡，取代 Leaflet 預設的白底泡泡。
-// Popup 直接掛在 MapContainer 底下（沒有依附任何 layer）時，react-leaflet 掛載時就會自動開啟
-function ActiveTrailPopup({ trail, position }: { trail: MapTrail; position: [number, number] }) {
-  const t = useTranslations('TrailListItem');
+// 卡片與地圖邊緣至少留的距離
+const POPUP_EDGE_PADDING = 8;
+// 選中／滑過時線外框寬 8px，凸出線中心 4px；卡片位置從外框邊緣算起，不從線中心算
+const LINE_HALO = 4;
+// 卡片與線外框之間的間距，上方下方都一樣
+const POPUP_LINE_GAP = 8;
+// 卡片還沒量到實際尺寸前用的估計值（名稱、縣市、距離三行）
+const ESTIMATED_CARD_SIZE = { width: 180, height: 84 };
 
-  if (!trail.name) return null;
+type PopupPlacement = { lat: number; lng: number; side: 'above' | 'below' };
+
+// 依目前視野決定卡片的錨點，全部在螢幕像素座標裡算：
+// 優先放在線的正上方；上方會超出畫面就翻到下方；上下都放不下（線比畫面還高）才貼著畫面頂端，難免蓋到線。
+// 水平方向對準線在畫面內可見那段的中間，再夾在畫面左右邊緣內。
+// 整條線都在畫面外就不顯示——例如從清單滑過一筆不在視野內的紀錄
+function placePopup(
+  map: L.Map,
+  bounds: { north: number; south: number; west: number; east: number },
+  card: { width: number; height: number }
+): PopupPlacement | null {
+  const size = map.getSize();
+  const northWest = map.latLngToContainerPoint([bounds.north, bounds.west]);
+  const southEast = map.latLngToContainerPoint([bounds.south, bounds.east]);
+  const top = northWest.y - LINE_HALO - POPUP_LINE_GAP;
+  const bottom = southEast.y + LINE_HALO + POPUP_LINE_GAP;
+  const left = northWest.x;
+  const right = southEast.x;
+  if (right < 0 || left > size.x || bottom < 0 || top > size.y) return null;
+
+  const visibleCenterX = (Math.max(left, 0) + Math.min(right, size.x)) / 2;
+  const halfWidth = card.width / 2;
+  const x = Math.max(halfWidth + POPUP_EDGE_PADDING, Math.min(visibleCenterX, size.x - halfWidth - POPUP_EDGE_PADDING));
+
+  let y: number;
+  let side: PopupPlacement['side'];
+  if (top - card.height >= POPUP_EDGE_PADDING) {
+    [y, side] = [top, 'above'];
+  } else if (bottom + card.height <= size.y - POPUP_EDGE_PADDING) {
+    [y, side] = [bottom, 'below'];
+  } else {
+    [y, side] = [card.height + POPUP_EDGE_PADDING, 'above'];
+  }
+
+  const latLng = map.containerPointToLatLng([x, y]);
+  return { lat: latLng.lat, lng: latLng.lng, side };
+}
+
+// 滑過或選中路線時，浮現一張跟版面其他卡片同一套語言的懸浮資訊卡，取代 Leaflet 預設的白底泡泡。
+// Popup 直接掛在 MapContainer 底下（沒有依附任何 layer）時，react-leaflet 掛載時就會自動開啟。
+// 不用 Leaflet 的 autoPan 把卡片拉進畫面：滑過一條線就移動地圖太突兀，還會連帶觸發重抓視野資料。
+// 改成地圖每次移動都重新決定卡片放哪，讓卡片自己留在畫面內
+function ActiveTrailPopup({
+  trail,
+  north,
+  south,
+  west,
+  east,
+  loading,
+}: {
+  trail: MapTrail;
+  north: number;
+  south: number;
+  west: number;
+  east: number;
+  loading: boolean;
+}) {
+  const t = useTranslations('TrailListItem');
+  const map = useMap();
+
+  // 地圖移動時只讓這張卡片重新 render 算位置，不驚動整個 TrailsLayer
+  const [, setViewVersion] = useState(0);
+  const bumpView = () => setViewVersion((version) => version + 1);
+  useMapEvents({ move: bumpView, zoomend: bumpView, resize: bumpView });
+
+  // 量卡片實際尺寸，名稱長短不同寬度就不同；ResizeObserver 開始觀察時就會先回報一次
+  const [cardSize, setCardSize] = useState<{ width: number; height: number } | null>(null);
+  const measureCard = useCallback((element: HTMLDivElement | null) => {
+    if (!element) return;
+    const observer = new ResizeObserver(() => setCardSize({ width: element.offsetWidth, height: element.offsetHeight }));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  const placement = placePopup(map, { north, south, west, east }, cardSize ?? ESTIMATED_CARD_SIZE);
+  const lat = placement?.lat;
+  const lng = placement?.lng;
+  // Popup 的 position 得是穩定參照：數值沒變卻每次 new 一個陣列，react-leaflet 會當成 position 變了
+  // 重新觸發開啟動畫，無關的 re-render 就會讓卡片看起來反覆彈出。用座標數值當依賴
+  const position = useMemo<[number, number] | null>(() => (lat !== undefined && lng !== undefined ? [lat, lng] : null), [lat, lng]);
+
+  if (!trail.name || !placement || !position) return null;
 
   return (
-    <Popup position={position} closeButton={false} autoPan={false} className="hiking-map-popup" minWidth={180}>
-      <div className="bg-panel text-background-contrary rounded-panel flex flex-col gap-1 p-3">
+    // 箭頭已隱藏（連同它在 CSS 佔的 margin 一起拿掉，見 globals.css），卡片底邊直接對著錨點，
+    // 錨點本身已經算進線外框的寬度，所以不再加 offset
+    <Popup position={position} offset={[0, 0]} closeButton={false} autoPan={false} className="hiking-map-popup" minWidth={180}>
+      <div
+        ref={measureCard}
+        className="bg-panel text-background-contrary rounded-panel flex flex-col gap-1 p-3"
+        // 放在線下方時，卡片往下移一整個自身高度：Leaflet 的 popup 只會從錨點往上長
+        style={placement.side === 'below' ? { transform: 'translateY(100%)' } : undefined}
+      >
         <span className="text-base font-bold">{trail.name}</span>
-        <span className="text-background-contrary/60 text-xs">
-          {trail.county} {trail.town}
-        </span>
-        {trail.distanceKm !== undefined && <span className="text-accent mt-1 text-sm font-semibold">{t('distanceValue', { distance: trail.distanceKm })}</span>}
+        {loading ? (
+          // 跟下面兩行用同樣的字級撐出行高，詳情回來換成文字時卡片高度不變
+          <>
+            <span className="text-xs">
+              <span className="bg-background-contrary/10 inline-block h-3 w-24 animate-pulse rounded align-middle" />
+            </span>
+            <span className="mt-1 text-sm">
+              <span className="bg-background-contrary/10 inline-block h-3.5 w-16 animate-pulse rounded align-middle" />
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="text-background-contrary/60 text-xs">
+              {trail.county} {trail.town}
+            </span>
+            {trail.distanceKm !== undefined && (
+              <span className="text-accent mt-1 text-sm font-semibold">{t('distanceValue', { distance: trail.distanceKm })}</span>
+            )}
+          </>
+        )}
       </div>
     </Popup>
   );
 }
 
-// 動態模式選中某筆紀錄時，findInView 給的欄位不夠顯示浮現卡，額外打 findOne 補足 name/county/town/distanceKm。
-// 職責刻意跟 findInView 分開：地圖列表只管位置與線，詳情資料只有選中當下才需要
-function useActiveHikeDetail(activeSlug: string | null, isDynamic: boolean) {
-  const [detail, setDetail] = useState<Hike | null>(null);
-
-  useEffect(() => {
-    if (!isDynamic || !activeSlug) return;
-    let cancelled = false;
-    fetchHikeDetail(Number(activeSlug))
-      .then((hike) => {
-        if (!cancelled) setDetail(hike);
-      })
-      .catch(() => {
-        if (!cancelled) setDetail(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [activeSlug, isDynamic]);
-
-  // 沒有選中、不是動態模式，或 detail 還是上一筆選中紀錄的殘留（新請求還沒回來），都回傳 null
-  return isDynamic && activeSlug && String(detail?.id) === activeSlug ? detail : null;
+// 把幾條線依序移到同一個 SVG 的最上層（陣列越後面越上層）。
+// 留在原本的 pane 裡調順序，不另開更高的 pane——每個 pane 都有一張蓋滿視野的 SVG，
+// 疊在上面會把底下其他線的點擊與 hover 全部擋掉。
+// 已經是目標順序就不動：搬動游標底下的 DOM 節點可能引發多餘的 mouseout/mouseover
+function raiseLines(lines: L.Polyline[]) {
+  const elements = lines.map((line) => line.getElement());
+  const parent = elements.at(-1)?.parentNode;
+  if (!parent) return;
+  const tail = Array.from(parent.childNodes).slice(-elements.length);
+  if (tail.length === elements.length && elements.every((el, i) => el === tail[i])) return;
+  for (const line of lines) line.bringToFront();
 }
 
 export default function TrailsLayer({ trails, userId, category, resizeKey, initialViewport, referenceLayers, visibleLayers, overlays, layerOpacity }: Props) {
@@ -446,8 +554,25 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
   const markers = useMapStore((state) => state.markers);
   const zoom = useMapStore((state) => state.zoom);
 
+  const hikeDetails = useMapStore((state) => state.hikeDetails);
+  const loadHikeDetail = useMapStore((state) => state.loadHikeDetail);
+
   const isDynamic = trails === undefined;
-  const activeHikeDetail = useActiveHikeDetail(activeSlug, isDynamic);
+
+  // 動態模式選中或滑過某筆紀錄時，補抓浮現卡要的縣市與距離（findInView 不帶這些欄位）。
+  // 抓過的留在 store，loadHikeDetail 自己會略過已有或正在抓的
+  useEffect(() => {
+    if (!isDynamic) return;
+    if (activeSlug) void loadHikeDetail(activeSlug);
+    if (hoverSlug) void loadHikeDetail(hoverSlug);
+  }, [isDynamic, activeSlug, hoverSlug, loadHikeDetail]);
+
+  // 各路線的 Leaflet 線實體，用來調整疊放順序
+  const trailLines = useRef(new Map<string, L.Polyline[]>());
+  const registerLines = useCallback((slug: string, lines: L.Polyline[] | null) => {
+    if (lines) trailLines.current.set(slug, lines);
+    else trailLines.current.delete(slug);
+  }, []);
 
   // 兩種模式統一成同一份 { slug, path, trackUrl, bbox } 陣列給下面畫線邏輯共用
   const lineTrails: MapTrail[] = isDynamic
@@ -462,36 +587,55 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
         }))
     : (trails ?? []);
 
-  const activeTrail: MapTrail | null = isDynamic
-    ? activeHikeDetail
-      ? {
-          slug: String(activeHikeDetail.id),
-          path: [],
-          trackUrl: activeHikeDetail.trackUrl,
-          name: activeHikeDetail.name,
-          county: activeHikeDetail.county,
-          town: activeHikeDetail.town,
-          distanceKm: activeHikeDetail.distanceKm,
-          bbox: activeHikeDetail.bbox,
-        }
-      : null
-    : (lineTrails.find((trail) => trail.slug === activeSlug) ?? null);
-  const activeTrailPath = activeTrail
-    ? (tracks.get(activeTrail.slug)?.path ?? lineTrails.find((trail) => trail.slug === activeTrail.slug)?.path ?? activeTrail.path)
-    : null;
-  const activeTrailPoints = activeTrailPath?.flat();
-  const activeTrailMidpoint = activeTrailPoints?.[Math.floor(activeTrailPoints.length / 2)];
-  const activeTrailMidpointLng = activeTrailMidpoint?.[0];
-  const activeTrailMidpointLat = activeTrailMidpoint?.[1];
-  // Popup 的 position 得是穩定參照：activeTrailMidpoint 的數值就算沒變，
-  // 這裡如果每次 render 都 new 一個 [lat, lng] 陣列，react-leaflet 的 Popup 會被判定成
-  // position 變了而重新觸發開啟動畫，hover 造成的無關 re-render 就會讓 popup 看起來反覆重新彈出。
-  // 這張卡片本來就是跟著「被選中的那條路線」走：換 slug 必然換一批座標資料，中點數值會跟著變；
-  // 同一個 slug 完整軌跡載入完成時，中點數值也會更新一次——用座標數值當依賴，兩種情況都能正確觸發
-  const activeTrailPopupPosition = useMemo<[number, number] | null>(
-    () => (activeTrailMidpointLat !== undefined && activeTrailMidpointLng !== undefined ? [activeTrailMidpointLat, activeTrailMidpointLng] : null),
-    [activeTrailMidpointLat, activeTrailMidpointLng]
-  );
+  // 動態模式：詳情回來前先用 findInView 的資料（至少有名稱），回來後再補上縣市與距離
+  const trailFor = (slug: string | null): MapTrail | null => {
+    if (!slug) return null;
+    const line = lineTrails.find((trail) => trail.slug === slug) ?? null;
+    if (!isDynamic) return line;
+    const detail = hikeDetails.get(slug);
+    if (!detail) return line;
+    return {
+      slug,
+      path: line?.path ?? [],
+      trackUrl: detail.trackUrl,
+      name: detail.name,
+      county: detail.county,
+      town: detail.town,
+      distanceKm: detail.distanceKm,
+      bbox: detail.bbox,
+    };
+  };
+  const activeTrail = trailFor(activeSlug);
+  // 資訊卡跟著滑鼠走：滑過哪條就顯示哪條，移開後回到選中的那條
+  const popupTrail = trailFor(hoverSlug) ?? activeTrail;
+  // 詳情還沒回來時卡片先用 skeleton 撐住縣市與距離那兩行，資料到了高度不會跳
+  const popupDetailLoading = isDynamic && popupTrail !== null && !hikeDetails.has(popupTrail.slug);
+  const popupTrailPath = popupTrail ? (tracks.get(popupTrail.slug)?.path ?? popupTrail.path) : null;
+  // 線的範圍直接從畫出來的路徑算，不用 bbox 欄位：簡化線換成完整軌跡時，兩者才會一致。
+  // 卡片要放哪（上方、下方、貼齊畫面）交給卡片自己依目前視野決定
+  const popupBounds = useMemo(() => {
+    const points = popupTrailPath?.flat();
+    if (!points?.length) return null;
+    let north = -Infinity;
+    let south = Infinity;
+    let west = Infinity;
+    let east = -Infinity;
+    for (const [lng, lat] of points) {
+      if (lat > north) north = lat;
+      if (lat < south) south = lat;
+      if (lng < west) west = lng;
+      if (lng > east) east = lng;
+    }
+    return { north, south, west, east };
+  }, [popupTrailPath]);
+
+  // 選中的線疊在其他線上面，滑過的線再疊在選中的線上面。
+  // 每次 render 都檢查：新載入的線會被 Leaflet 加在最上層，得把這兩條再拉回頂端
+  useEffect(() => {
+    const slugs = [...new Set([activeSlug, hoverSlug])].filter((slug): slug is string => slug !== null);
+    const lines = slugs.flatMap((slug) => trailLines.current.get(slug) ?? []);
+    if (lines.length > 0) raiseLines(lines);
+  });
 
   // < CLUSTER_ZOOM 只畫點位（走 cluster），達到門檻才畫線；固定模式一律畫線，本來資料量就小。
   // focus 純粹是 UI 狀態（外框樣式、popup），不影響地圖該載什麼——資料完全由 zoom/視野決定
@@ -541,7 +685,17 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
         </LayerPane>
       )}
 
-      {activeTrail && activeTrailPopupPosition && <ActiveTrailPopup key={activeTrail.slug} trail={activeTrail} position={activeTrailPopupPosition} />}
+      {popupTrail && popupBounds && (
+        <ActiveTrailPopup
+          key={popupTrail.slug}
+          trail={popupTrail}
+          north={popupBounds.north}
+          south={popupBounds.south}
+          west={popupBounds.west}
+          east={popupBounds.east}
+          loading={popupDetailLoading}
+        />
+      )}
 
       {showClusterOnly ? (
         // 自己的紀錄與官方名單共用同一個 cluster group：多個 group 各自聚合時彼此會疊在一起
@@ -580,7 +734,16 @@ export default function TrailsLayer({ trails, userId, category, resizeKey, initi
             {lineTrails.map((trail) => {
               // 完整軌跡還沒到就先畫簡化線，載好再換掉，中間不要出現空白
               const path = tracks.get(trail.slug)?.path ?? trail.path;
-              return <TrailPolylines key={trail.slug} slug={trail.slug} path={path} isActive={trail.slug === activeSlug} isHover={trail.slug === hoverSlug} />;
+              return (
+                <TrailPolylines
+                  key={trail.slug}
+                  slug={trail.slug}
+                  path={path}
+                  isActive={trail.slug === activeSlug}
+                  isHover={trail.slug === hoverSlug}
+                  registerLines={registerLines}
+                />
+              );
             })}
           </LayerPane>
         )

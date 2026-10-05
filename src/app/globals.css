@@ -57,6 +57,18 @@ main:has(.page-wide) {
 .hiking-map-popup .leaflet-popup-tip-container {
   display: none;
 }
+/* Leaflet 預設在 popup 底下留 20px 給箭頭，箭頭藏起來後這段空白還在，卡片會離錨點太遠。
+   選擇器要比 Leaflet 的 .leaflet-popup 多一個 class：leaflet.css 跟著地圖 chunk 比這支檔案晚載入，
+   同權重時會被它蓋回 20px——卡片在線上方時多出空隙，翻到線下方時則往上壓住線 */
+.leaflet-popup.hiking-map-popup {
+  margin-bottom: 0;
+}
+/* 資訊卡會在滑過軌跡時浮現在線旁邊，卡片本身不接滑鼠事件——
+   否則卡片冒出來蓋住游標，線收到 mouseout 把卡片收掉，接著又滑回線上，反覆閃爍 */
+.hiking-map-popup,
+.hiking-map-popup * {
+  pointer-events: none;
+}
 
 /* 細窄、跟卡片同色系的捲軸，取代瀏覽器預設樣式。平常捲軸透明不佔視覺份量，滑鼠移進容器才顯示。
    純用標準 scrollbar-color/-width，不疊加 ::-webkit-scrollbar 系列——兩者同時設定在 Chromium 上

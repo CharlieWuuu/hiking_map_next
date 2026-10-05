@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
-import type { InViewHike } from './db/hikes';
-import { fetchHikesInView } from './db/hikes.query.actions';
+import type { Hike, InViewHike } from './db/hikes';
+import { fetchHikeDetail, fetchHikesInView } from './db/hikes.query.actions';
 import { toSegments } from './geojsonSegments';
 
 export type LngLat = [number, number];
@@ -10,6 +10,10 @@ export type LngLat = [number, number];
 // 一條路線可能 200 點也可能 8000 點，用條數當上限會估不準記憶體。
 // 30 萬點約 20～40 MB，一般使用者根本碰不到，這個上限主要是防呆。
 const MAX_CACHED_POINTS = 300_000;
+
+// 浮現卡詳情的快取上限。一筆只有名稱、縣市、距離這類欄位（不含軌跡），
+// 500 筆也才一兩百 KB；上限只是防呆，一般使用者一次瀏覽碰不到
+const MAX_CACHED_HIKE_DETAILS = 500;
 
 // zoom 分層門檻：< CLUSTER_ZOOM 只顯示點位（cluster），
 // CLUSTER_ZOOM ~ DETAIL_ZOOM 顯示簡化線，>= DETAIL_ZOOM 換完整軌跡
@@ -49,7 +53,18 @@ type MapState = {
   loading: Set<string>;
   loadTrack: (slug: string, url: string) => Promise<void>;
   touchTracks: (slugs: string[]) => void;
+
+  // 地圖浮現卡要用的紀錄詳情（縣市、鄉鎮、距離），findInView 不帶這些欄位，選中或滑過時才補抓。
+  // 放在 store 而不是元件裡：離開 /data 再回來、或同一條線來回滑過，都不必重打。
+  // 值是 null 代表抓過但沒拿到（無權限或請求失敗），卡片就只顯示名稱，不會一直轉 skeleton
+  hikeDetails: Map<string, Hike | null>;
+  loadHikeDetail: (slug: string) => Promise<void>;
+  // 紀錄被編輯或刪除後呼叫，下次要顯示時重新抓
+  invalidateHikeDetail: (slug: string) => void;
 };
+
+// 正在抓的詳情。只用來擋重複請求，不影響畫面，所以不放進 store 觸發 re-render
+const pendingHikeDetails = new Set<string>();
 
 export const useMapStore = create<MapState>((set, get) => ({
   hoverSlug: null,
@@ -96,6 +111,39 @@ export const useMapStore = create<MapState>((set, get) => ({
       const cached = tracks.get(slug);
       if (cached) cached.lastUsed = now;
     }
+  },
+
+  hikeDetails: new Map(),
+
+  loadHikeDetail: async (slug) => {
+    if (get().hikeDetails.has(slug) || pendingHikeDetails.has(slug)) return;
+    pendingHikeDetails.add(slug);
+    let hike: Hike | null = null;
+    try {
+      hike = await fetchHikeDetail(Number(slug));
+    } catch {
+      // 失敗也記成 null，卡片退回只顯示名稱；下次編輯或重新整理頁面才會再試
+    } finally {
+      pendingHikeDetails.delete(slug);
+    }
+    set((state) => {
+      const next = new Map(state.hikeDetails).set(slug, hike);
+      // 超過上限就丟最早抓的（Map 依插入順序迭代）
+      for (const oldest of next.keys()) {
+        if (next.size <= MAX_CACHED_HIKE_DETAILS) break;
+        next.delete(oldest);
+      }
+      return { hikeDetails: next };
+    });
+  },
+
+  invalidateHikeDetail: (slug) => {
+    if (!get().hikeDetails.has(slug)) return;
+    set((state) => {
+      const next = new Map(state.hikeDetails);
+      next.delete(slug);
+      return { hikeDetails: next };
+    });
   },
 
   loadTrack: async (slug, url) => {

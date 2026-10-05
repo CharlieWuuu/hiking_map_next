@@ -1,6 +1,6 @@
 'use server';
 
-import { findHikeById, findHikesInView, findHikesPaginated, getHikePageInfo, type Hike, type InViewHike } from './hikes';
+import { findHikeMetaById, findHikesInView, findHikesPaginated, getHikePageInfo, type Hike, type InViewHike } from './hikes';
 import { findAllMountains, type Mountain } from './mountains';
 import { findReferenceLayers, type ReferenceLayers } from './referenceLayers';
 import { getSession } from './session';
@@ -36,12 +36,13 @@ export async function fetchMountains(): Promise<Mountain[]> {
   return findAllMountains();
 }
 
-// 地圖選中一條路線時要拿完整軌跡來畫。只回傳自己的紀錄——
+// 地圖選中或滑過一條路線時，補浮現卡要的縣市、距離等欄位。不帶完整軌跡——
+// 線本身地圖已經有了，這裡多帶只是白白傳上百 KB。只回傳自己的紀錄：
 // 封閉系統下沒有「看別人紀錄」這回事
 export async function fetchHikeDetail(hikeId: number): Promise<Hike | null> {
   const session = await getSession();
   if (!session) return null;
-  const hike = await findHikeById(hikeId);
+  const hike = await findHikeMetaById(hikeId);
   if (!hike || hike.userId !== session.userId) return null;
   return hike;
 }
