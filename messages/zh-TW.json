@@ -79,6 +79,8 @@
     "oauth": {
       "google": "使用 Google 登入"
     },
+    "googleError": "Google 登入失敗，請再試一次。",
+    "googleEmailTaken": "這個 Google 帳號的 email 已經有帳號了。請先用帳號密碼登入，再到「設定」綁定 Google。",
     "forgotPassword": "忘記密碼？"
   },
   "ForgotPasswordPage": {

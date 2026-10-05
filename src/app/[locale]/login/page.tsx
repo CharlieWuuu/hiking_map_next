@@ -1,10 +1,20 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 
 import { Link, useRouter } from '../../../i18n/navigation';
 import { useAuth } from '../../../lib/authStore';
+
+// Google 登入失敗時，回呼會把原因帶在網址上（/login?error=...）導回這裡
+function OAuthError() {
+  const t = useTranslations('LoginPage');
+  const error = useSearchParams().get('error');
+  if (error === 'googleEmailTaken') return <p className="max-w-xs text-sm text-red-500">{t('googleEmailTaken')}</p>;
+  if (error === 'google') return <p className="max-w-xs text-sm text-red-500">{t('googleError')}</p>;
+  return null;
+}
 
 export default function LoginPage() {
   const t = useTranslations('LoginPage');
@@ -78,6 +88,10 @@ export default function LoginPage() {
       </div>
 
       <div className="flex w-full max-w-xs flex-col gap-3">
+        {/* useSearchParams 需要 Suspense 邊界，只包住讀網址的這一小塊，表單本身仍可預先渲染 */}
+        <Suspense>
+          <OAuthError />
+        </Suspense>
         {/* 導去 Route Handler 開始 OAuth，不是站內頁面跳轉：
             Link 會預抓並嘗試 soft navigation，這裡需要瀏覽器整頁離開 */}
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}

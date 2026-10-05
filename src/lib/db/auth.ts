@@ -169,13 +169,27 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
 
 // 用 Google 的 sub 找帳號，沒有就開一個。
 // username 由 email 的前半段推導，撞名時往後加數字。
-export async function findOrCreateGoogleUser(googleId: string, email: string | null, displayName: string): Promise<AuthUser> {
+// email 已被另一個（沒綁 Google 的）帳號使用時回 emailTaken，不自動合併：
+// 本站的 email 是在設定頁直接填、沒有寄信驗證，別人可以先用你的 email 註冊密碼帳號，
+// 自動合併的話你用 Google 登入就會進到對方掌握密碼的帳號。要接起來請先用密碼登入，再到設定頁綁定 Google
+export async function findOrCreateGoogleUser(
+  googleId: string,
+  email: string | null,
+  displayName: string
+): Promise<{ ok: true; user: AuthUser } | { ok: false; error: 'emailTaken' }> {
   const existing = await sql`
     SELECT id, username, email, google_id AS "googleId" FROM users WHERE google_id = ${googleId} LIMIT 1
   `;
   if (existing[0]) {
     const user = existing[0];
-    return { id: Number(user.id), username: user.username as string, email: (user.email as string) ?? null, googleId: (user.googleId as string) ?? null };
+    return {
+      ok: true,
+      user: { id: Number(user.id), username: user.username as string, email: (user.email as string) ?? null, googleId: (user.googleId as string) ?? null },
+    };
+  }
+
+  if (email && (await sql`SELECT 1 FROM users WHERE email = ${email} LIMIT 1`).length > 0) {
+    return { ok: false, error: 'emailTaken' };
   }
 
   const base = (email?.split('@')[0] || displayName).replace(/[^a-zA-Z0-9_]/g, '') || 'hiker';
@@ -188,15 +202,25 @@ export async function findOrCreateGoogleUser(googleId: string, email: string | n
     username = `${base}${suffix}`;
   }
 
-  const inserted = await sql`
-    INSERT INTO users (username, password, google_id, email)
-    VALUES (${username}, NULL, ${googleId}, ${email})
-    RETURNING id, username, email, google_id AS "googleId"
-  `;
+  let inserted;
+  try {
+    inserted = await sql`
+      INSERT INTO users (username, password, google_id, email)
+      VALUES (${username}, NULL, ${googleId}, ${email})
+      RETURNING id, username, email, google_id AS "googleId"
+    `;
+  } catch (error) {
+    // 上面檢查完到寫入之間，email 剛好被別人用掉：一樣當成 emailTaken
+    if ((error as { constraint?: string }).constraint === 'IDX_users_email') return { ok: false, error: 'emailTaken' };
+    throw error;
+  }
   const user = inserted[0];
   await sql`INSERT INTO profiles (user_id, avatar, description) VALUES (${user.id}, '', '')`;
 
-  return { id: Number(user.id), username: user.username as string, email: (user.email as string) ?? null, googleId: (user.googleId as string) ?? null };
+  return {
+    ok: true,
+    user: { id: Number(user.id), username: user.username as string, email: (user.email as string) ?? null, googleId: (user.googleId as string) ?? null },
+  };
 }
 
 // 把 Google 帳號綁到現有帳號上。同一個 Google 帳號不能綁在兩個地方。

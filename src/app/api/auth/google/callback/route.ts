@@ -65,8 +65,11 @@ export async function GET(request: NextRequest) {
     redirect(result.ok ? '/settings?googleLink=success' : '/settings?googleLink=conflict');
   }
 
-  // 登入：沒有對應帳號就開一個
-  const user = await findOrCreateGoogleUser(profile.sub, profile.email ?? null, profile.name ?? '');
+  // 登入：沒有對應帳號就開一個。email 已經被沒綁 Google 的帳號用掉時不合併，
+  // 請使用者先用密碼登入再到設定頁綁定（理由見 findOrCreateGoogleUser）
+  const result = await findOrCreateGoogleUser(profile.sub, profile.email ?? null, profile.name ?? '');
+  if (!result.ok) redirect('/login?error=googleEmailTaken');
+  const { user } = result;
   const token = await signSessionToken({ userId: user.id, username: user.username });
   await setSessionCookie(token);
 
