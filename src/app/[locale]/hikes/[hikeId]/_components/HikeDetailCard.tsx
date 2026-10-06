@@ -12,6 +12,7 @@ import type { Hike } from '../../../../../lib/db/hikes';
 import { deleteHikeAction, updateHikeAction } from '../../../../../lib/db/hikes.actions';
 import { fetchMountains } from '../../../../../lib/db/hikes.query.actions';
 import { useMapStore } from '../../../../../lib/mapStore';
+import { invalidateHikeQueries, useMountains } from '../../../../../lib/queries';
 
 type Props = {
   hike: Hike;
@@ -23,6 +24,8 @@ export default function HikeDetailCard({ hike: initialHike, mountainNames: initi
   const tEdit = useTranslations('TrailEditCard');
   const router = useRouter();
   const invalidateHikeDetail = useMapStore((state) => state.invalidateHikeDetail);
+  // 編輯卡片的山頭選單也用同一份，進到編輯時通常已經在快取裡
+  const { data: cachedMountains } = useMountains();
 
   const [hike, setHike] = useState(initialHike);
   const [mountainNames, setMountainNames] = useState(initialMountainNames);
@@ -52,10 +55,11 @@ export default function HikeDetailCard({ hike: initialHike, mountainNames: initi
           if (!result.ok) throw new Error(result.error);
           // 回到 /data 時地圖浮現卡要拿到新資料，store 裡的詳情快取得丟掉
           invalidateHikeDetail(String(hike.id));
+          void invalidateHikeQueries();
           // Server Action 只回傳成功與否，本地狀態直接套用剛送出的內容
           setHike((prev) => ({ ...prev, ...patch }));
           if (patch.mountainIds) {
-            const mountains = await fetchMountains();
+            const mountains = cachedMountains ?? (await fetchMountains());
             setMountainNames(
               patch.mountainIds.map((id) => mountains.find((mountain) => mountain.id === id)?.name).filter((name): name is string => Boolean(name))
             );
@@ -66,6 +70,7 @@ export default function HikeDetailCard({ hike: initialHike, mountainNames: initi
           const deleted = await deleteHikeAction(hike.id);
           if (!deleted.ok) throw new Error(deleted.error);
           invalidateHikeDetail(String(hike.id));
+          void invalidateHikeQueries();
           router.push('/data');
         }}
       />

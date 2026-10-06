@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
-import { fetchMountains } from '../../lib/db/hikes.query.actions';
 import type { Mountain } from '../../lib/db/mountains';
+import { useMountains } from '../../lib/queries';
 import TagBadge from '../TagBadge';
 import { inputClassName } from './fieldStyles';
 
@@ -13,15 +13,12 @@ type Props = {
   searchPlaceholder: string;
 };
 
-export default function MountainMultiSelect({ selectedIds, onChange, searchPlaceholder }: Props) {
-  const [mountains, setMountains] = useState<Mountain[]>([]);
-  const [query, setQuery] = useState('');
+const NO_MOUNTAINS: Mountain[] = [];
 
-  useEffect(() => {
-    fetchMountains()
-      .then(setMountains)
-      .catch(() => {});
-  }, []);
+export default function MountainMultiSelect({ selectedIds, onChange, searchPlaceholder }: Props) {
+  // 山頭清單跟資料頁、詳情頁共用同一份快取，打開編輯卡片不必每次重抓
+  const { data: mountains = NO_MOUNTAINS } = useMountains();
+  const [query, setQuery] = useState('');
 
   const selectedMountains = useMemo(() => mountains.filter((mountain) => selectedIds.includes(mountain.id)), [mountains, selectedIds]);
 

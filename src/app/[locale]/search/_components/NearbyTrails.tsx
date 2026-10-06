@@ -2,52 +2,17 @@
 
 import { LoaderCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
 
 import TrailListItem from '../../../../components/TrailListItem';
-import type { SearchResult } from '../../../../lib/db/search';
-import { fetchLastLocation, fetchNearbyTrails } from '../actions';
-
-const TAIPEI_FALLBACK = { lat: 25.033, lng: 121.5654 };
+import { useNearbyTrails } from '../../../../lib/queries';
 
 export default function NearbyTrails() {
-  const [retryToken, setRetryToken] = useState(0);
-  // key 改變讓元件重新掛載，狀態自然回到初始值，不用在 effect 裡對已掛載元件同步 setState('loading')
-  return <NearbyTrailsContent key={retryToken} onRetry={() => setRetryToken((token) => token + 1)} />;
-}
-
-function NearbyTrailsContent({ onRetry }: { onRetry: () => void }) {
   const t = useTranslations('SearchPage');
-  const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
-  const [results, setResults] = useState<SearchResult[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const coords = new Promise<{ lat: number; lng: number }>((resolve, reject) =>
-      navigator.geolocation.getCurrentPosition((position) => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }), reject)
-    ).catch(() =>
-      // 定位失敗時先試使用者最新一筆紀錄的位置，未登入或沒有紀錄則退回台北
-      fetchLastLocation()
-        .catch(() => null)
-        .then((lastLocation) => lastLocation ?? TAIPEI_FALLBACK)
-    );
-
-    coords
-      .then(({ lat, lng }) => fetchNearbyTrails(lat, lng))
-      .then((nearby) => {
-        if (cancelled) return;
-        setResults(nearby);
-        setStatus('ready');
-      })
-      .catch(() => {
-        if (!cancelled) setStatus('failed');
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // 定位與查詢都由 SWR 快取：回到探索頁直接顯示上次的結果，不必再等定位
+  const { data: results, error, isValidating, mutate } = useNearbyTrails();
+  // 按重試後重抓期間顯示載入中，而不是停在失敗畫面
+  const status = results ? 'ready' : error && !isValidating ? 'failed' : 'loading';
+  const onRetry = () => void mutate();
 
   return (
     <div className="flex flex-col gap-2">
@@ -72,9 +37,9 @@ function NearbyTrailsContent({ onRetry }: { onRetry: () => void }) {
         </div>
       )}
 
-      {status === 'ready' && results.length === 0 && <p className="text-background-contrary/60 py-6 text-center text-sm">{t('nearbyEmpty')}</p>}
+      {results && results.length === 0 && <p className="text-background-contrary/60 py-6 text-center text-sm">{t('nearbyEmpty')}</p>}
 
-      {status === 'ready' && results.length > 0 && (
+      {results && results.length > 0 && (
         <div className="flex flex-col gap-3">
           {results.map((item) => (
             <TrailListItem

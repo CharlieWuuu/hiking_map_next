@@ -5,7 +5,8 @@ import { useTranslations } from 'next-intl';
 import { Popover } from 'radix-ui';
 import { useEffect, useState } from 'react';
 
-import { fetchPopularQueries, fetchSearchSuggestions, logSearchQuery } from '../../lib/db/search.actions';
+import { logSearchQuery } from '../../lib/db/search.actions';
+import { usePopularQueries, useSearchSuggestions } from '../../lib/queries';
 import QuerySuggestionItem from './QuerySuggestionItem';
 import styles from './SearchBar.module.css';
 import type { QuerySuggestion, SearchResult } from './SearchBar.types';
@@ -18,37 +19,24 @@ type Props = {
 
 const SUGGESTION_DEBOUNCE_MS = 250;
 const SUGGESTION_LIMIT = 5;
+const NO_QUERIES: string[] = [];
 
 export default function SearchBar({ onSubmitQuery, onSelectEntity }: Props) {
   const t = useTranslations('SearchBar');
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
-  const [entitySuggestions, setEntitySuggestions] = useState<SearchResult[]>([]);
-  const [popularQueries, setPopularQueries] = useState<string[]>([]);
+  const { data: popularQueries = NO_QUERIES } = usePopularQueries();
 
+  // 停止輸入一段時間後才拿去問伺服器；同一個關鍵字問過就走快取
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   useEffect(() => {
-    fetchPopularQueries()
-      .then(setPopularQueries)
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const q = query.trim();
-    // 清空的工作交給下面的 visibleEntitySuggestions 用算的，
-    // 在 effect 裡同步 setState 會多觸發一輪 render
-    if (!q) return;
-
-    const timer = setTimeout(async () => {
-      const results = await fetchSearchSuggestions(q).catch(() => []);
-      setEntitySuggestions(
-        results
-          .slice(0, SUGGESTION_LIMIT)
-          .map((item) => ({ type: item.type, slug: item.slug, displayName: item.displayName, county: item.county ?? undefined, town: item.town ?? undefined }))
-      );
-    }, SUGGESTION_DEBOUNCE_MS);
-
+    const timer = setTimeout(() => setDebouncedQuery(query.trim()), SUGGESTION_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [query]);
+  const { data: suggestionResults } = useSearchSuggestions(debouncedQuery);
+  const entitySuggestions: SearchResult[] = (suggestionResults ?? [])
+    .slice(0, SUGGESTION_LIMIT)
+    .map((item) => ({ type: item.type, slug: item.slug, displayName: item.displayName, county: item.county ?? undefined, town: item.town ?? undefined }));
 
   const q = query.trim().toLowerCase();
   const querySuggestions: QuerySuggestion[] = q

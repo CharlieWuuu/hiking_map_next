@@ -9,6 +9,7 @@ import TrailEditCard, { type EditableTrail } from '../../../../../components/Tra
 import { useRouter } from '../../../../../i18n/navigation';
 import { createHikeAction } from '../../../../../lib/db/hikes.actions';
 import { GpxParseError, mergeParsedGpx, parseGpx, toFeatureCollection, type ParsedGpx, type TrackPoint } from '../../../../../lib/gpx/parseGpx';
+import { invalidateHikeQueries } from '../../../../../lib/queries';
 
 function getBbox(points: TrackPoint[]): [number, number, number, number] {
   let minLng = Infinity;
@@ -109,6 +110,8 @@ export default function GpxUploadForm() {
       geometry,
     });
     if (!result.ok) throw new Error(result.error);
+    // 新紀錄會影響官方名單的完成狀態、資料頁的分頁與附近路線
+    void invalidateHikeQueries();
     router.push(`/hikes/${result.id}`);
   }
 
